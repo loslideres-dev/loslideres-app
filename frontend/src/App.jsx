@@ -25,17 +25,26 @@ import Tarifas         from './pages/admin/Tarifas'
 import Auditoria       from './pages/admin/Auditoria'
 import Usuarios        from './pages/admin/Usuarios'
 
-// Guards
+// ── Guard ─────────────────────────────────────────────────────────────────────
 function PrivateRoute({ children, roles }) {
   const session   = useAuthStore(s => s.session)
   const userRoles = useAuthStore(s => s.roles)
+
   if (!session) return <Navigate to="/login" replace />
-  if (roles && !roles.some(r => userRoles.includes(r))) {
-    return <Navigate to="/login" replace />
+
+  if (roles && roles.length > 0) {
+    const tieneAcceso = roles.some(r => userRoles.includes(r))
+    if (!tieneAcceso) {
+      if (userRoles.includes('admin'))     return <Navigate to="/admin/dashboard"     replace />
+      if (userRoles.includes('bodeguero')) return <Navigate to="/bodeguero/recepcion" replace />
+      return <Navigate to="/cliente/casillero" replace />
+    }
   }
+
   return children
 }
 
+// ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <BrowserRouter>
@@ -47,7 +56,7 @@ export default function App() {
         <Route path="/auth/forgot-password"  element={<ForgotPassword />} />
         <Route path="/auth/confirmar-correo" element={<ConfirmarCorreo />} />
 
-        {/* Onboarding — requiere sesión, no requiere perfil completo */}
+        {/* Onboarding */}
         <Route path="/onboarding" element={
           <PrivateRoute><Onboarding /></PrivateRoute>
         }/>

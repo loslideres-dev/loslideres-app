@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, registrarAuditoria } from '../lib/supabase'
 
-// ── Cliente: sus paquetes ──────────────────────────────────────────────────
+// ── Cliente: sus paquetes ─────────────────────────────────────────────────────
 export function usePaquetes() {
   return useQuery({
     queryKey: ['paquetes'],
@@ -17,7 +17,7 @@ export function usePaquetes() {
   })
 }
 
-// ── Detalle de un paquete ─────────────────────────────────────────────────
+// ── Detalle de un paquete ─────────────────────────────────────────────────────
 export function usePaquete(id) {
   return useQuery({
     queryKey: ['paquete', id],
@@ -34,46 +34,60 @@ export function usePaquete(id) {
   })
 }
 
-// ── Bodeguero: paquetes de hoy ────────────────────────────────────────────
+// ── Bodeguero: paquetes de hoy ────────────────────────────────────────────────
 export function usePaquetesHoy(bodegueroId) {
   return useQuery({
     queryKey: ['paquetes-hoy', bodegueroId],
     queryFn: async () => {
       const hoy = new Date().toISOString().split('T')[0]
       const { data, error } = await supabase
-        .from('paquetes')
-        .select('*, perfiles!cliente_id(nombre, codigo_casillero)')
+        .from('paquetes_con_cliente')
+        .select('*')
         .eq('bodeguero_id', bodegueroId)
         .gte('fecha_recepcion', `${hoy}T00:00:00`)
         .order('fecha_recepcion', { ascending: false })
       if (error) throw error
-      return data
+      return data.map(p => ({
+        ...p,
+        perfiles: {
+          nombre:           p.cliente_nombre,
+          codigo_casillero: p.cliente_codigo,
+          telefono:         p.cliente_telefono,
+        }
+      }))
     },
     enabled: !!bodegueroId,
     staleTime: 10_000,
   })
 }
 
-// ── Admin: todos los paquetes por estado ──────────────────────────────────
+// ── Admin: todos los paquetes por estado ──────────────────────────────────────
 export function usePaquetesAdmin(estado = null) {
   return useQuery({
     queryKey: ['paquetes-admin', estado],
     queryFn: async () => {
       let q = supabase
-        .from('paquetes')
-        .select('*, perfiles!cliente_id(nombre, codigo_casillero, telefono)')
+        .from('paquetes_con_cliente')
+        .select('*')
         .order('fecha_recepcion', { ascending: false })
       if (estado) q = q.eq('estado', estado)
       const { data, error } = await q
       if (error) throw error
-      return data
+      return data.map(p => ({
+        ...p,
+        perfiles: {
+          nombre:           p.cliente_nombre,
+          codigo_casillero: p.cliente_codigo,
+          telefono:         p.cliente_telefono,
+        }
+      }))
     },
     staleTime: 15_000,
     refetchInterval: 30_000,
   })
 }
 
-// ── Admin: stats para dashboard ───────────────────────────────────────────
+// ── Admin: stats para dashboard ───────────────────────────────────────────────
 export function useDashboardStats() {
   return useQuery({
     queryKey: ['dashboard-stats'],
@@ -90,7 +104,7 @@ export function useDashboardStats() {
         entregados_hoy:    data.filter(p =>
           p.estado === 'ENTREGADO' &&
           new Date(p.fecha_recepcion).toDateString() === hoy).length,
-        total:             data.length,
+        total: data.length,
       }
     },
     staleTime: 15_000,
@@ -98,7 +112,7 @@ export function useDashboardStats() {
   })
 }
 
-// ── Registrar paquete (bodeguero) ─────────────────────────────────────────
+// ── Registrar paquete (bodeguero) ─────────────────────────────────────────────
 export function useRegistrarPaquete() {
   const qc = useQueryClient()
   return useMutation({
@@ -106,7 +120,13 @@ export function useRegistrarPaquete() {
       const codigo = `ENC-${Date.now().toString(36).toUpperCase()}`
       const { data, error } = await supabase
         .from('paquetes')
-        .insert({ codigo, cliente_id: clienteId, bodeguero_id: bodegueroId, foto_url, ...resto })
+        .insert({
+          codigo,
+          cliente_id:   clienteId,
+          bodeguero_id: bodegueroId,
+          foto_url,
+          ...resto,
+        })
         .select()
         .single()
       if (error) throw error
@@ -121,18 +141,29 @@ export function useRegistrarPaquete() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['paquetes-hoy'] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
     },
   })
 }
 
-// ── Tarifar paquete (admin) ───────────────────────────────────────────────
+// ── Tarifar paquete (admin) ───────────────────────────────────────────────────
 export function useTarifar() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, precio_sugerido, precio_final, fecha_estimada, anteriorEstado }) => {
+    mutationFn: async ({
+      id, precio_sugerido, precio_final, fecha_estimada,
+      conductor_id, monto_traslado, anteriorEstado,
+    }) => {
       const { data, error } = await supabase
         .from('paquetes')
-        .update({ precio_sugerido, precio_final, fecha_estimada, estado: 'TARIFADO' })
+        .update({
+          precio_sugerido,
+          precio_final,
+          fecha_estimada,
+          conductor_id,
+          monto_traslado,
+          estado: 'TARIFADO',
+        })
         .eq('id', id)
         .select()
         .single()
@@ -142,7 +173,13 @@ export function useTarifar() {
         entidad:   'paquetes',
         entidadId: id,
         valorAnterior: { estado: anteriorEstado },
-        valorNuevo:    { precio_sugerido, precio_final, diferencia: precio_final - precio_sugerido },
+        valorNuevo: {
+          precio_sugerido,
+          precio_final,
+          diferencia:    precio_final - precio_sugerido,
+          conductor_id,
+          monto_traslado,
+        },
       })
       return data
     },
@@ -153,7 +190,7 @@ export function useTarifar() {
   })
 }
 
-// ── Despachar paquete (admin) ─────────────────────────────────────────────
+// ── Despachar paquete (admin) ─────────────────────────────────────────────────
 export function useDespachar() {
   const qc = useQueryClient()
   return useMutation({
