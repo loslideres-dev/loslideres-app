@@ -139,7 +139,7 @@ export default function Casillero() {
           {
             n: '2',
             title: `Deja tu código en la dirección`,
-            desc:  `Sin el LID-${codigo} no sabemos de quién es el paquete cuando llega.`,
+            desc:  `Sin el ${codigo} no sabemos de quién es el paquete cuando llega.`,
           },
           {
             n: '3',

@@ -4,6 +4,7 @@ import Login          from './pages/auth/Login'
 import AuthCallback   from './pages/auth/AuthCallback'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import Casillero      from './pages/cliente/Casillero'
+import Paquetes       from './pages/cliente/Paquetes'
 
 const Placeholder = ({ title }) => (
   <div className="min-h-screen flex items-center justify-center"
@@ -33,7 +34,7 @@ export default function App() {
           <PrivateRoute><Casillero /></PrivateRoute>
         }/>
         <Route path="/cliente/paquetes" element={
-          <PrivateRoute><Placeholder title="Mis paquetes" /></PrivateRoute>
+          <PrivateRoute><Paquetes /></PrivateRoute>
         }/>
         <Route path="/cliente/perfil" element={
           <PrivateRoute><Placeholder title="Perfil" /></PrivateRoute>
