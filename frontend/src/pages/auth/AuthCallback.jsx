@@ -7,18 +7,33 @@ import { Loader2 } from 'lucide-react'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
-  const setAuth  = useAuthStore((s) => s.setAuth)
+  const setAuth  = useAuthStore(s => s.setAuth)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setAuth(session.user, session)
-        const roles    = session.user?.user_metadata?.roles ?? []
-        const redirect = ROLE_REDIRECT[roles[0]] ?? '/cliente/casillero'
-        navigate(redirect, { replace: true })
-      } else {
-        navigate('/login', { replace: true })
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { navigate('/login', { replace: true }); return }
+
+      const user = session.user
+      setAuth(user, session)
+
+      const roles = user?.user_metadata?.roles ?? ['cliente']
+
+      // Solo para clientes verificar si necesitan onboarding
+      if (roles.includes('cliente') && !roles.includes('admin')) {
+        const { data: perfil } = await supabase
+          .from('perfiles')
+          .select('telefono, direccion_entrega, codigo_casillero')
+          .eq('id', user.id)
+          .single()
+
+        const necesitaOnboarding = !perfil?.telefono || !perfil?.direccion_entrega
+        if (necesitaOnboarding) {
+          navigate('/onboarding', { replace: true }); return
+        }
       }
+
+      const base = ROLE_REDIRECT[roles[0]] ?? '/cliente/casillero'
+      navigate(base, { replace: true })
     })
   }, [])
 
