@@ -1,0 +1,15 @@
+{
+  "types": [
+    { "type": "feat",     "section": "✨ Nuevas funcionalidades" },
+    { "type": "fix",      "section": "🐛 Correcciones" },
+    { "type": "perf",     "section": "⚡ Mejoras de rendimiento" },
+    { "type": "refactor", "section": "♻️ Refactorización" },
+    { "type": "chore",    "section": "🔧 Mantenimiento", "hidden": false },
+    { "type": "docs",     "section": "📝 Documentación" },
+    { "type": "style",    "section": "💄 Estilos" },
+    { "type": "test",     "section": "✅ Tests" }
+  ],
+  "header": "# Los Líderes Encomiendas · Changelog\n\n",
+  "commitUrlFormat": "https://github.com/loslideres-dev/loslideres-app/commit/{{hash}}",
+  "compareUrlFormat": "https://github.com/loslideres-dev/loslideres-app/compare/{{previousTag}}...{{currentTag}}"
+}
