@@ -3,8 +3,8 @@ import { useAuthStore } from './store/authStore'
 import Login          from './pages/auth/Login'
 import AuthCallback   from './pages/auth/AuthCallback'
 import ForgotPassword from './pages/auth/ForgotPassword'
+import Casillero      from './pages/cliente/Casillero'
 
-// Placeholders — los iremos creando en los próximos pasos
 const Placeholder = ({ title }) => (
   <div className="min-h-screen flex items-center justify-center"
     style={{ background: '#F4F6FA' }}>
@@ -25,30 +25,26 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Públicas */}
-        <Route path="/login"                 element={<Login />} />
-        <Route path="/auth/callback"         element={<AuthCallback />} />
-        <Route path="/auth/forgot-password"  element={<ForgotPassword />} />
+        <Route path="/login"                element={<Login />} />
+        <Route path="/auth/callback"        element={<AuthCallback />} />
+        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
 
-        {/* Cliente */}
         <Route path="/cliente/casillero" element={
-          <PrivateRoute><Placeholder title="Casillero del cliente" /></PrivateRoute>
+          <PrivateRoute><Casillero /></PrivateRoute>
         }/>
         <Route path="/cliente/paquetes" element={
           <PrivateRoute><Placeholder title="Mis paquetes" /></PrivateRoute>
         }/>
-
-        {/* Bodeguero */}
+        <Route path="/cliente/perfil" element={
+          <PrivateRoute><Placeholder title="Perfil" /></PrivateRoute>
+        }/>
         <Route path="/bodeguero/recepcion" element={
           <PrivateRoute><Placeholder title="Recepción bodeguero" /></PrivateRoute>
         }/>
-
-        {/* Admin */}
         <Route path="/admin/dashboard" element={
           <PrivateRoute><Placeholder title="Dashboard admin" /></PrivateRoute>
         }/>
 
-        {/* Default */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
