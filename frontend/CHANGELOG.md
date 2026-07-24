@@ -1,6 +1,8 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.0.2](https://github.com/loslideres-dev/loslideres-app/compare/v0.0.1...v0.0.2) (2026-07-24)
+
 ### 0.0.1 (2026-07-24)
 
 
