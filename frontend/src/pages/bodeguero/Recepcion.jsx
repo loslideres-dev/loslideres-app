@@ -1,125 +1,208 @@
 import { useState, useRef } from 'react'
-import { Camera, Search, Package, Check, X, Loader2 } from 'lucide-react'
+import {
+  Camera, Image as ImageIcon, Search, Package, Check, X, Loader2, AlertCircle,
+} from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useBuscarCliente } from '../../hooks/usePerfiles'
 import { useRegistrarPaquete } from '../../hooks/usePaquetes'
 import { supabase } from '../../lib/supabase'
+import { comprimirImagen } from '../../lib/imageUtils'
 import { TAMANIOS } from '../../constants/roles'
 import BodegueroLayout from '../../components/layout/BodegueroLayout'
 import Toast from '../../components/ui/Toast'
 
+const MAX_KB = 300
+
+// Sugerencia de tamaño según el lado más largo (en cm)
+function sugerirTamanio(l, a, h) {
+  const m = Math.max(Number(l) || 0, Number(a) || 0, Number(h) || 0)
+  if (!m)       return ''
+  if (m <= 30)  return 'S'
+  if (m <= 50)  return 'M'
+  if (m <= 80)  return 'L'
+  return 'XL'
+}
+
 export default function Recepcion() {
   const { user } = useAuthStore()
-  const [step, setStep]             = useState(1) // 1=buscar, 2=registrar, 3=ok
-  const [query, setQuery]           = useState('')
+
+  // Flujo: 1 = buscar cliente · 2 = registrar paquete · 3 = éxito
+  const [step,       setStep]       = useState(1)
+  const [query,      setQuery]      = useState('')
   const [clienteSel, setClienteSel] = useState(null)
-  const [foto, setFoto]             = useState(null)
-  const [fotoUrl, setFotoUrl]       = useState(null)
-  const [uploading, setUploading]   = useState(false)
-  const [toast, setToast]           = useState({ show: false, msg: '', type: 'success' })
-  const [form, setForm]             = useState({
+
+  // Foto
+  const [fotoBlob,    setFotoBlob]    = useState(null)
+  const [fotoPreview, setFotoPreview] = useState(null)
+  const [fotoKB,      setFotoKB]      = useState(null)
+  const [procesando,  setProcesando]  = useState(false)
+  const [errorFoto,   setErrorFoto]   = useState('')
+
+  const camRef = useRef(null)   // input con capture (cámara)
+  const galRef = useRef(null)   // input sin capture (galería)
+
+  const [form, setForm] = useState({
     descripcion: '', tienda: '',
     largo_cm: '', ancho_cm: '', alto_cm: '', peso_kg: '',
     tamanio: '', observaciones: '',
   })
-  const fileRef = useRef()
+  const [tamanioManual, setTamanioManual] = useState(false)
+  const [toast, setToast] = useState({ show: false, msg: '', type: 'success' })
+  const [ultimoRegistro, setUltimoRegistro] = useState(null)
 
   const { data: resultados = [], isLoading: buscando } = useBuscarCliente(query)
-  const { mutateAsync: registrar, isPending } = useRegistrarPaquete()
+  const { mutateAsync: registrar, isPending: guardando } = useRegistrarPaquete()
 
+  // ── Medidas: al cambiar, sugerir tamaño si no fue elegido a mano ────────────
+  const setMedida = (campo, valor) => {
+    setForm(f => {
+      const nuevo = { ...f, [campo]: valor }
+      if (!tamanioManual) {
+        nuevo.tamanio = sugerirTamanio(nuevo.largo_cm, nuevo.ancho_cm, nuevo.alto_cm)
+      }
+      return nuevo
+    })
+  }
+
+  // ── Selección de foto (cámara o galería) ────────────────────────────────────
   const handleFoto = async (e) => {
     const file = e.target.files?.[0]
+    e.target.value = ''            // permite volver a elegir el mismo archivo
     if (!file) return
-    setFoto(URL.createObjectURL(file))
-    setUploading(true)
+
+    setErrorFoto('')
+    setProcesando(true)
     try {
-      const ext  = file.name.split('.').pop()
-      const path = `${Date.now()}.${ext}`
-      const { error } = await supabase.storage
-        .from('paquetes-fotos')
-        .upload(path, file, { cacheControl: '3600', upsert: false })
-      if (error) throw error
-      const { data: { publicUrl } } = supabase.storage
-        .from('paquetes-fotos').getPublicUrl(path)
-      setFotoUrl(publicUrl)
-    } catch {
-      setToast({ show: true, msg: 'Error subiendo foto', type: 'error' })
+      const { blob, sizeKB } = await comprimirImagen(file, { maxKB: MAX_KB })
+      if (fotoPreview) URL.revokeObjectURL(fotoPreview)
+      setFotoBlob(blob)
+      setFotoKB(sizeKB)
+      setFotoPreview(URL.createObjectURL(blob))
+    } catch (err) {
+      setErrorFoto(err.message ?? 'Error al procesar la foto. Intenta de nuevo.')
+      setFotoBlob(null)
+      setFotoPreview(null)
+      setFotoKB(null)
     } finally {
-      setUploading(false)
+      setProcesando(false)
     }
   }
 
+  const quitarFoto = () => {
+    if (fotoPreview) URL.revokeObjectURL(fotoPreview)
+    setFotoBlob(null); setFotoPreview(null); setFotoKB(null); setErrorFoto('')
+  }
+
+  // ── Guardar: sube la foto y crea el paquete ─────────────────────────────────
   const handleGuardar = async () => {
-    if (!clienteSel) return
+    if (!clienteSel || !fotoBlob || !form.tamanio) return
     try {
-      await registrar({
-        clienteId:   clienteSel.id,
-        bodegueroId: user.id,
-        foto_url:    fotoUrl,
-        descripcion: form.descripcion,
-        tienda:      form.tienda,
-        largo_cm:    parseFloat(form.largo_cm) || null,
-        ancho_cm:    parseFloat(form.ancho_cm) || null,
-        alto_cm:     parseFloat(form.alto_cm)  || null,
-        peso_kg:     parseFloat(form.peso_kg)  || null,
-        tamanio:     form.tamanio,
-        observaciones: form.observaciones,
+      // 1. Subir foto comprimida a Storage
+      const path = `paq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`
+      const { error: errUp } = await supabase.storage
+        .from('paquetes-fotos')
+        .upload(path, fotoBlob, { contentType: 'image/jpeg', upsert: false })
+      if (errUp) throw errUp
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('paquetes-fotos')
+        .getPublicUrl(path)
+
+      // 2. Insertar el paquete
+      const data = await registrar({
+        clienteId:     clienteSel.id,
+        bodegueroId:   user.id,
+        foto_url:      publicUrl,
+        descripcion:   form.descripcion.trim() || null,
+        tienda:        form.tienda.trim() || null,
+        largo_cm:      parseFloat(form.largo_cm) || null,
+        ancho_cm:      parseFloat(form.ancho_cm) || null,
+        alto_cm:       parseFloat(form.alto_cm)  || null,
+        peso_kg:       parseFloat(form.peso_kg)  || null,
+        tamanio:       form.tamanio,
+        observaciones: form.observaciones.trim() || null,
       })
+
+      setUltimoRegistro({ codigo: data.codigo, cliente: clienteSel.nombre })
       setStep(3)
-    } catch {
-      setToast({ show: true, msg: 'Error registrando paquete', type: 'error' })
+    } catch (err) {
+      console.error(err)
+      setToast({ show: true, msg: 'Error al registrar el paquete', type: 'error' })
     }
   }
 
-  const resetForm = () => {
+  const resetTodo = () => {
+    quitarFoto()
     setStep(1); setQuery(''); setClienteSel(null)
-    setFoto(null); setFotoUrl(null)
-    setForm({ descripcion:'',tienda:'',largo_cm:'',ancho_cm:'',alto_cm:'',peso_kg:'',tamanio:'',observaciones:'' })
+    setTamanioManual(false)
+    setForm({
+      descripcion: '', tienda: '',
+      largo_cm: '', ancho_cm: '', alto_cm: '', peso_kg: '',
+      tamanio: '', observaciones: '',
+    })
   }
+
+  const puedeGuardar = clienteSel && fotoBlob && form.tamanio && !procesando && !guardando
 
   return (
     <BodegueroLayout>
       <Toast message={toast.msg} show={toast.show} type={toast.type}
         onHide={() => setToast(t => ({ ...t, show: false }))} />
 
+      {/* Inputs ocultos — cámara y galería */}
+      <input ref={camRef} type="file" accept="image/*" capture="environment"
+        className="hidden" onChange={handleFoto} />
+      <input ref={galRef} type="file" accept="image/*"
+        className="hidden" onChange={handleFoto} />
+
       <div className="px-5 py-4">
 
-        {/* ── STEP 1: Buscar cliente ── */}
+        {/* ════════ PASO 1 · BUSCAR CLIENTE ════════ */}
         {step === 1 && (
           <div>
             <p className="text-slate-500 text-sm mb-4">
-              Ingresa el código LID o nombre del cliente
+              Busca el código <span className="font-mono font-semibold">LID-XXXX</span>{' '}
+              que viene en la etiqueta del paquete
             </p>
+
             <div className="relative mb-3">
-              <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={17}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
+                inputMode="text"
+                autoCapitalize="characters"
                 placeholder="LID-0001 o nombre del cliente"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-slate-200
-                  bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500"
-              />
+                className="w-full pl-10 pr-10 py-3.5 rounded-xl border border-slate-200
+                  bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500" />
               {buscando && (
-                <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2
-                  text-slate-400 animate-spin" />
+                <Loader2 size={16}
+                  className="absolute right-3 top-1/2 -translate-y-1/2
+                    text-slate-400 animate-spin" />
               )}
             </div>
 
             {resultados.length > 0 && (
               <div className="space-y-2">
                 {resultados.map(c => (
-                  <button key={c.id} onClick={() => { setClienteSel(c); setStep(2) }}
+                  <button key={c.id}
+                    onClick={() => { setClienteSel(c); setStep(2) }}
                     className="w-full bg-white rounded-xl p-4 flex items-center gap-3
                       border border-slate-100 active:scale-95 transition text-left">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center
                       text-white text-sm font-bold flex-shrink-0"
                       style={{ background: '#1565C0' }}>
-                      {c.nombre?.slice(0,2).toUpperCase()}
+                      {(c.nombre ?? '??').slice(0, 2).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{c.nombre}</p>
-                      <p className="text-xs text-slate-400 font-mono">{c.codigo_casillero}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">
+                        {c.nombre}
+                      </p>
+                      <p className="text-xs text-slate-400 font-mono">
+                        {c.codigo_casillero}
+                      </p>
                     </div>
                   </button>
                 ))}
@@ -127,143 +210,226 @@ export default function Recepcion() {
             )}
 
             {query.length >= 2 && !buscando && resultados.length === 0 && (
-              <div className="text-center py-8">
+              <div className="text-center py-10">
                 <Package size={36} className="text-slate-200 mx-auto mb-2" />
                 <p className="text-slate-500 text-sm">No se encontró ningún cliente</p>
+                <p className="text-slate-400 text-xs mt-1">
+                  Verifica el código o consulta con Administración
+                </p>
               </div>
             )}
           </div>
         )}
 
-        {/* ── STEP 2: Registrar paquete ── */}
+        {/* ════════ PASO 2 · REGISTRAR PAQUETE ════════ */}
         {step === 2 && clienteSel && (
           <div>
             {/* Cliente seleccionado */}
             <div className="bg-white rounded-xl p-4 flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center
-                  text-white text-xs font-bold" style={{ background: '#1565C0' }}>
-                  {clienteSel.nombre?.slice(0,2).toUpperCase()}
+                  text-white text-xs font-bold flex-shrink-0"
+                  style={{ background: '#1565C0' }}>
+                  {(clienteSel.nombre ?? '??').slice(0, 2).toUpperCase()}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">{clienteSel.nombre}</p>
-                  <p className="text-xs text-slate-400 font-mono">{clienteSel.codigo_casillero}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">
+                    {clienteSel.nombre}
+                  </p>
+                  <p className="text-xs text-slate-400 font-mono">
+                    {clienteSel.codigo_casillero}
+                  </p>
                 </div>
               </div>
-              <button onClick={() => setStep(1)} className="text-slate-400">
-                <X size={18} />
+              <button onClick={() => setStep(1)}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center
+                  justify-center text-slate-500 flex-shrink-0 active:scale-95">
+                <X size={16} />
               </button>
             </div>
 
-            {/* Foto */}
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">FOTO DEL PAQUETE *</p>
-              <button onClick={() => fileRef.current?.click()}
-                className="w-full h-40 rounded-xl border-2 border-dashed border-slate-200
-                  flex items-center justify-center bg-white overflow-hidden relative">
-                {foto
-                  ? <img src={foto} className="w-full h-full object-cover" />
-                  : <div className="flex flex-col items-center gap-2 text-slate-400">
-                      <Camera size={32} />
-                      <span className="text-sm">Tomar foto o elegir imagen</span>
-                    </div>
-                }
-                {uploading && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                    <Loader2 size={24} className="animate-spin text-blue-600" />
-                  </div>
+            {/* ── FOTO ── */}
+            <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
+              FOTO DEL PAQUETE *
+            </p>
+
+            {fotoPreview ? (
+              <div className="relative mb-2">
+                <img src={fotoPreview} alt="Foto del paquete"
+                  className="w-full h-48 object-cover rounded-xl" />
+                <button onClick={quitarFoto}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full
+                    flex items-center justify-center active:scale-95"
+                  style={{ background: 'rgba(220,38,38,0.9)' }}>
+                  <X size={16} className="text-white" />
+                </button>
+                {fotoKB != null && (
+                  <span className="absolute bottom-2 left-2 text-xs text-white
+                    px-2 py-1 rounded-lg font-medium"
+                    style={{ background: 'rgba(13,43,94,0.8)' }}>
+                    {fotoKB} KB ✓
+                  </span>
                 )}
-              </button>
-              <input ref={fileRef} type="file" accept="image/*" capture="environment"
-                className="hidden" onChange={handleFoto} />
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <button onClick={() => camRef.current?.click()}
+                  disabled={procesando}
+                  className="h-32 rounded-xl border-2 border-dashed border-slate-200
+                    bg-white flex flex-col items-center justify-center gap-2
+                    text-slate-500 active:scale-95 transition disabled:opacity-50">
+                  {procesando
+                    ? <Loader2 size={26} className="animate-spin text-blue-600" />
+                    : <Camera size={26} style={{ color: '#1565C0' }} />}
+                  <span className="text-xs font-medium">Tomar foto</span>
+                </button>
+                <button onClick={() => galRef.current?.click()}
+                  disabled={procesando}
+                  className="h-32 rounded-xl border-2 border-dashed border-slate-200
+                    bg-white flex flex-col items-center justify-center gap-2
+                    text-slate-500 active:scale-95 transition disabled:opacity-50">
+                  <ImageIcon size={26} className="text-slate-400" />
+                  <span className="text-xs font-medium">Elegir de galería</span>
+                </button>
+              </div>
+            )}
 
-            {/* Datos básicos */}
+            {errorFoto && (
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl mb-2
+                bg-red-50 border border-red-200">
+                <AlertCircle size={15} className="text-red-500 flex-shrink-0" />
+                <p className="text-xs text-red-700">
+                  {errorFoto} Si el navegador pidió permiso de cámara y lo negaste,
+                  actívalo en los ajustes del navegador o usa la galería.
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs text-slate-400 mb-4">
+              La foto se comprime automáticamente a máx. {MAX_KB} KB
+            </p>
+
+            {/* ── DATOS ── */}
             <div className="space-y-3 mb-4">
               <input type="text" placeholder="Descripción (ej. Zapatos Nike)"
                 value={form.descripcion}
                 onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white
                   text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-              <input type="text" placeholder="Tienda (ej. Amazon)"
+              <input type="text" placeholder="Tienda (ej. Amazon, Shein)"
                 value={form.tienda}
                 onChange={e => setForm(f => ({ ...f, tienda: e.target.value }))}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white
                   text-sm outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
 
-            {/* Medidas */}
-            <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">MEDIDAS (CM)</p>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              {[['largo_cm','Largo'],['ancho_cm','Ancho'],['alto_cm','Alto']].map(([k,l]) => (
-                <input key={k} type="number" placeholder={l}
+            {/* ── MEDIDAS ── */}
+            <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
+              MEDIDAS (CM) Y PESO (KG)
+            </p>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {[['largo_cm', 'Largo'], ['ancho_cm', 'Ancho'], ['alto_cm', 'Alto']].map(([k, l]) => (
+                <input key={k} type="number" inputMode="decimal" placeholder={l}
                   value={form[k]}
-                  onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+                  onChange={e => setMedida(k, e.target.value)}
                   className="px-3 py-3 rounded-xl border border-slate-200 bg-white
                     text-sm text-center outline-none focus:ring-2 focus:ring-blue-500" />
               ))}
             </div>
-            <input type="number" placeholder="Peso (kg)"
+            <input type="number" inputMode="decimal" placeholder="Peso (kg)"
               value={form.peso_kg}
               onChange={e => setForm(f => ({ ...f, peso_kg: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white
                 text-sm outline-none focus:ring-2 focus:ring-blue-500 mb-4" />
 
-            {/* Tamaño */}
-            <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">TAMAÑO</p>
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {TAMANIOS.map(({ value, label }) => (
+            {/* ── TAMAÑO ── */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-slate-400 tracking-wider">
+                TAMAÑO *
+              </p>
+              {!tamanioManual && form.tamanio && (
+                <span className="text-xs font-medium" style={{ color: '#1565C0' }}>
+                  Sugerido por medidas: {form.tamanio}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-4 gap-2 mb-1">
+              {TAMANIOS.map(({ value }) => (
                 <button key={value}
-                  onClick={() => setForm(f => ({ ...f, tamanio: value }))}
+                  onClick={() => {
+                    setTamanioManual(true)
+                    setForm(f => ({ ...f, tamanio: value }))
+                  }}
                   className={`py-3 rounded-xl text-sm font-bold border-2 transition
+                    active:scale-95
                     ${form.tamanio === value
-                      ? 'border-blue-600 text-white'
+                      ? 'text-white'
                       : 'border-slate-200 text-slate-600 bg-white'}`}
-                  style={form.tamanio === value ? { background: '#1565C0', borderColor: '#1565C0' } : {}}>
+                  style={form.tamanio === value
+                    ? { background: '#1565C0', borderColor: '#1565C0' }
+                    : {}}>
                   {value}
                 </button>
               ))}
             </div>
+            <p className="text-xs text-slate-400 mb-4">
+              S: hasta 30 cm · M: hasta 50 cm · L: hasta 80 cm · XL: más grande
+            </p>
 
-            {/* Observaciones */}
+            {/* ── OBSERVACIONES ── */}
             <textarea placeholder="Observaciones (opcional)"
               value={form.observaciones} rows={2}
               onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white
                 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-4" />
 
-            <button onClick={handleGuardar} disabled={isPending || uploading || !form.tamanio}
-              className="w-full py-4 rounded-xl text-white font-semibold text-sm
-                flex items-center justify-center gap-2 disabled:opacity-50 transition active:scale-95"
+            {/* ── GUARDAR ── */}
+            <button onClick={handleGuardar} disabled={!puedeGuardar}
+              className="w-full py-4 rounded-2xl text-white font-semibold text-sm
+                flex items-center justify-center gap-2 disabled:opacity-50
+                active:scale-95 transition"
               style={{ background: '#1565C0' }}>
-              {isPending
+              {guardando
                 ? <><Loader2 size={18} className="animate-spin" /> Guardando...</>
-                : 'Registrar paquete'}
+                : <><Check size={18} /> Registrar paquete</>}
             </button>
+
+            {!fotoBlob && (
+              <p className="text-xs text-center text-slate-400 mt-2">
+                La foto es obligatoria para registrar
+              </p>
+            )}
           </div>
         )}
 
-        {/* ── STEP 3: Éxito ── */}
+        {/* ════════ PASO 3 · ÉXITO ════════ */}
         {step === 3 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center py-14 text-center">
             <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
               style={{ background: '#E6F4EC' }}>
               <Check size={40} style={{ color: '#1B7A3E' }} />
             </div>
-            <h2 className="text-slate-800 text-xl font-bold mb-1">¡Paquete registrado!</h2>
-            <p className="text-slate-500 text-sm mb-2">
-              Asignado a <span className="font-semibold">{clienteSel?.nombre}</span>
-            </p>
+            <h2 className="text-slate-800 text-xl font-bold mb-1">
+              ¡Paquete registrado!
+            </h2>
+            {ultimoRegistro && (
+              <p className="text-slate-500 text-sm mb-1">
+                <span className="font-mono font-semibold">{ultimoRegistro.codigo}</span>
+                {' '}· {ultimoRegistro.cliente}
+              </p>
+            )}
             <p className="text-slate-400 text-xs mb-8">
-              Iván recibirá una notificación para asignar el precio.
+              Administración lo verá en su bandeja para asignarle el precio.
             </p>
-            <button onClick={resetForm}
-              className="w-full py-4 rounded-xl text-white font-semibold text-sm active:scale-95"
+            <button onClick={resetTodo}
+              className="w-full py-4 rounded-2xl text-white font-semibold text-sm
+                active:scale-95 transition"
               style={{ background: '#1565C0' }}>
               Registrar otro paquete
             </button>
           </div>
         )}
+
       </div>
     </BodegueroLayout>
   )

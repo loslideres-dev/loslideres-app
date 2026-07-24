@@ -2,10 +2,11 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ScanLine, List, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
+import logoMini from '../../assets/logo-mini.png'
 
 const TABS = [
-  { label: 'Registrar', icon: ScanLine, path: '/bodeguero/recepcion' },
-  { label: 'Mis registros', icon: List, path: '/bodeguero/registros' },
+  { label: 'Registrar',     icon: ScanLine, path: '/bodeguero/recepcion' },
+  { label: 'Mis registros', icon: List,     path: '/bodeguero/registros' },
 ]
 
 export default function BodegueroLayout({ children }) {
@@ -27,11 +28,16 @@ export default function BodegueroLayout({ children }) {
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-12 pb-4"
         style={{ background: '#0D2B5E' }}>
-        <div>
-          <p className="text-sky-300 text-xs">BODEGA MAICAO</p>
-          <h1 className="text-white text-lg font-bold">{nombre}</h1>
+        <div className="flex items-center gap-3">
+          <img src={logoMini} alt="Los Líderes"
+            className="w-10 h-10 rounded-xl" />
+          <div>
+            <p className="text-sky-300 text-xs">BODEGA MAICAO</p>
+            <h1 className="text-white text-lg font-bold">{nombre}</h1>
+          </div>
         </div>
-        <button onClick={handleLogout} className="text-slate-400 hover:text-white transition">
+        <button onClick={handleLogout}
+          className="text-slate-400 hover:text-white transition p-2 active:scale-95">
           <LogOut size={20} />
         </button>
       </div>
@@ -50,7 +56,8 @@ export default function BodegueroLayout({ children }) {
               style={{ color: active ? '#1565C0' : '#94a3b8' }}>
               <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
               <span className="text-xs font-medium">{label}</span>
-              {active && <span className="absolute bottom-0 w-8 h-0.5 rounded-full bg-blue-600" />}
+              {active &&
+                <span className="absolute bottom-0 w-8 h-0.5 rounded-full bg-blue-600" />}
             </button>
           )
         })}

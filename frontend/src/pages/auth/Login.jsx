@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
 import { ROLE_REDIRECT } from '../../constants/roles'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import logo from '../../assets/logo.png'
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
 const loginSchema = z.object({
@@ -22,7 +23,7 @@ const registerSchema = z.object({
   direccion: z.string().min(10, 'Ingresa tu dirección completa en Maracaibo'),
 })
 
-// ── Botón Google compartido ───────────────────────────────────────────────────
+// ── Botón Google ──────────────────────────────────────────────────────────────
 function GoogleButton({ loading, onClick }) {
   return (
     <button onClick={onClick} disabled={loading}
@@ -32,7 +33,7 @@ function GoogleButton({ loading, onClick }) {
       {loading
         ? <Loader2 size={18} className="animate-spin text-slate-400" />
         : (
-          <svg width="18" height="18" viewBox="0 0 18 18">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
             <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
             <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
             <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
@@ -60,7 +61,7 @@ function LoginForm({ onSwitch }) {
 
   const checkOnboarding = async (user) => {
     const roles = user?.user_metadata?.roles ?? ['cliente']
-    if (roles.includes('admin')) return false
+    if (roles.includes('admin') || roles.includes('bodeguero')) return false
     const { data: perfil } = await supabase
       .from('perfiles')
       .select('telefono, direccion_entrega')
@@ -75,8 +76,7 @@ function LoginForm({ onSwitch }) {
       const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
       if (err) throw err
       setAuth(data.user, data.session)
-      const necesitaOnboarding = await checkOnboarding(data.user)
-      if (necesitaOnboarding) {
+      if (await checkOnboarding(data.user)) {
         navigate('/onboarding', { replace: true }); return
       }
       const roles = data.user?.user_metadata?.roles ?? ['cliente']
@@ -108,7 +108,8 @@ function LoginForm({ onSwitch }) {
       <p className="text-slate-500 text-sm mb-5">Entra con tu cuenta</p>
 
       {error && (
-        <div className="mb-4 px-4 py-3 rounded-xl text-sm text-red-700 bg-red-50 border border-red-200">
+        <div className="mb-4 px-4 py-3 rounded-xl text-sm text-red-700
+          bg-red-50 border border-red-200">
           {error}
         </div>
       )}
@@ -121,7 +122,8 @@ function LoginForm({ onSwitch }) {
             className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
               focus:ring-2 focus:ring-blue-500
               ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
-          {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+          {errors.email &&
+            <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
         </div>
 
         <div>
@@ -133,11 +135,13 @@ function LoginForm({ onSwitch }) {
                 focus:ring-2 focus:ring-blue-500
                 ${errors.password ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
             <button type="button" onClick={() => setShowPass(v => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400
+                hover:text-slate-600">
               {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
+          {errors.password &&
+            <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
         </div>
 
         <div className="flex justify-end">
@@ -151,7 +155,9 @@ function LoginForm({ onSwitch }) {
           className="w-full py-3 rounded-xl text-white font-semibold text-sm
             flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95"
           style={{ background: '#1565C0' }}>
-          {loading ? <><Loader2 size={18} className="animate-spin" /> Entrando...</> : 'Entrar'}
+          {loading
+            ? <><Loader2 size={18} className="animate-spin" /> Entrando...</>
+            : 'Entrar'}
         </button>
       </form>
 
@@ -165,7 +171,8 @@ function LoginForm({ onSwitch }) {
 
       <p className="text-center text-sm text-slate-500 mt-5">
         ¿No tienes cuenta?{' '}
-        <button onClick={onSwitch} className="text-blue-600 font-semibold hover:text-blue-800">
+        <button onClick={onSwitch}
+          className="text-blue-600 font-semibold hover:text-blue-800">
           Regístrate
         </button>
       </p>
@@ -198,8 +205,8 @@ function RegisterForm({ onSwitch }) {
             telefono,
             direccion_entrega: direccion,
             roles: ['cliente'],
-          }
-        }
+          },
+        },
       })
       if (err) throw err
       if (data.session) {
@@ -244,12 +251,12 @@ function RegisterForm({ onSwitch }) {
       </p>
 
       {error && (
-        <div className="mb-4 px-4 py-3 rounded-xl text-sm text-red-700 bg-red-50 border border-red-200">
+        <div className="mb-4 px-4 py-3 rounded-xl text-sm text-red-700
+          bg-red-50 border border-red-200">
           {error}
         </div>
       )}
 
-      {/* Google primero */}
       <GoogleButton loading={googleLoad} onClick={handleGoogle} />
 
       <div className="flex items-center gap-3 my-5">
@@ -259,29 +266,32 @@ function RegisterForm({ onSwitch }) {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-3">
-        {/* Nombre */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Nombre completo</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Nombre completo
+          </label>
           <input type="text" autoComplete="name" placeholder="María Fernanda García"
             {...register('nombre')}
             className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
               focus:ring-2 focus:ring-blue-500
               ${errors.nombre ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
-          {errors.nombre && <p className="mt-1 text-xs text-red-600">{errors.nombre.message}</p>}
+          {errors.nombre &&
+            <p className="mt-1 text-xs text-red-600">{errors.nombre.message}</p>}
         </div>
 
-        {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Correo electrónico</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Correo electrónico
+          </label>
           <input type="email" autoComplete="email" placeholder="tucorreo@gmail.com"
             {...register('email')}
             className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
               focus:ring-2 focus:ring-blue-500
               ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
-          {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+          {errors.email &&
+            <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
         </div>
 
-        {/* Password */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
           <div className="relative">
@@ -295,31 +305,35 @@ function RegisterForm({ onSwitch }) {
               {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
+          {errors.password &&
+            <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
         </div>
 
-        {/* Teléfono */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Teléfono WhatsApp</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Teléfono WhatsApp
+          </label>
           <input type="tel" autoComplete="tel" placeholder="+58 412 000 0000"
             {...register('telefono')}
             className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
               focus:ring-2 focus:ring-blue-500
               ${errors.telefono ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
-          {errors.telefono && <p className="mt-1 text-xs text-red-600">{errors.telefono.message}</p>}
+          {errors.telefono &&
+            <p className="mt-1 text-xs text-red-600">{errors.telefono.message}</p>}
         </div>
 
-        {/* Dirección */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
             Dirección de entrega en Maracaibo
           </label>
-          <textarea placeholder="Av. Las Delicias, Edif. Torre Norte, Apto 4B. Referencia: frente al CCCT."
-            rows={2} {...register('direccion')}
+          <textarea rows={2}
+            placeholder="Av. Las Delicias, Edif. Torre Norte, Apto 4B. Referencia: frente al CCCT."
+            {...register('direccion')}
             className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
               focus:ring-2 focus:ring-blue-500 resize-none
               ${errors.direccion ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
-          {errors.direccion && <p className="mt-1 text-xs text-red-600">{errors.direccion.message}</p>}
+          {errors.direccion &&
+            <p className="mt-1 text-xs text-red-600">{errors.direccion.message}</p>}
         </div>
 
         <button type="submit" disabled={loading}
@@ -334,7 +348,8 @@ function RegisterForm({ onSwitch }) {
 
       <p className="text-center text-sm text-slate-500 mt-5">
         ¿Ya tienes cuenta?{' '}
-        <button onClick={onSwitch} className="text-blue-600 font-semibold hover:text-blue-800">
+        <button onClick={onSwitch}
+          className="text-blue-600 font-semibold hover:text-blue-800">
           Iniciar sesión
         </button>
       </p>
@@ -349,13 +364,11 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#F4F6FA' }}>
 
-      {/* Header */}
+      {/* Header con logo real */}
       <div className="flex flex-col items-center justify-center pt-14 pb-10 px-6"
         style={{ background: '#0D2B5E' }}>
-        <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4"
-          style={{ background: '#1565C0' }}>
-          <span className="text-white text-4xl font-black">LL</span>
-        </div>
+        <img src={logo} alt="Los Líderes Encomiendas"
+          className="w-24 h-24 mb-4 rounded-3xl shadow-lg" />
         <h1 className="text-white text-2xl font-bold tracking-tight">Los Líderes</h1>
         <p className="text-sky-300 text-sm mt-1">Encomiendas</p>
         <p className="text-slate-400 text-xs mt-3 text-center">
@@ -368,7 +381,7 @@ export default function Login() {
         <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-6 pt-7">
           {mode === 'login'
             ? <LoginForm    onSwitch={() => setMode('register')} />
-            : <RegisterForm onSwitch={() => setMode('login')}    />
+            : <RegisterForm onSwitch={() => setMode('login')} />
           }
         </div>
         <p className="text-xs text-slate-400 mt-5 mb-8 text-center">

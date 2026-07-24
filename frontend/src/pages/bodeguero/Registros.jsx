@@ -12,15 +12,18 @@ export default function Registros() {
     <BodegueroLayout>
       <div className="px-5 py-4">
 
-        {/* Counter */}
+        {/* Contador del día */}
         <div className="rounded-2xl p-5 mb-4 flex items-center justify-between"
           style={{ background: '#1565C0' }}>
           <div>
             <p className="text-blue-200 text-xs mb-0.5">REGISTRADOS HOY</p>
             <p className="text-white text-4xl font-black">{paquetes.length}</p>
-            <p className="text-blue-200 text-xs mt-0.5">paquetes</p>
+            <p className="text-blue-200 text-xs mt-0.5">
+              {paquetes.length === 1 ? 'paquete' : 'paquetes'}
+            </p>
           </div>
-          <button onClick={() => refetch()} className="text-blue-200 hover:text-white transition">
+          <button onClick={() => refetch()}
+            className="text-blue-200 hover:text-white transition p-2 active:scale-95">
             <RefreshCw size={22} />
           </button>
         </div>
@@ -35,35 +38,41 @@ export default function Registros() {
         {!isLoading && paquetes.length === 0 && (
           <div className="text-center py-16">
             <Package size={48} className="text-slate-200 mx-auto mb-3" />
-            <p className="text-slate-500 text-sm font-medium">No has registrado paquetes hoy</p>
+            <p className="text-slate-500 text-sm font-medium">
+              No has registrado paquetes hoy
+            </p>
+            <p className="text-slate-400 text-xs mt-1">
+              Los registros aparecen aquí al guardarlos
+            </p>
           </div>
         )}
 
         <div className="space-y-3">
           {paquetes.map(p => (
-            <div key={p.id} className="bg-white rounded-2xl overflow-hidden flex items-stretch shadow-sm">
-              {/* Foto */}
+            <div key={p.id}
+              className="bg-white rounded-2xl overflow-hidden flex items-stretch shadow-sm">
               <div className="w-20 h-20 flex-shrink-0 bg-slate-100">
                 {p.foto_url
-                  ? <img src={p.foto_url} className="w-full h-full object-cover" />
+                  ? <img src={p.foto_url} alt="" className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center">
                       <Package size={24} className="text-slate-300" />
                     </div>
                 }
               </div>
-              <div className="flex-1 px-4 py-3">
-                <div className="flex items-start justify-between mb-1">
+              <div className="flex-1 px-4 py-3 min-w-0">
+                <div className="flex items-start justify-between mb-1 gap-2">
                   <p className="text-xs font-mono text-slate-400">{p.codigo}</p>
                   <EstadoBadge estado={p.estado} />
                 </div>
-                <p className="text-sm font-semibold text-slate-800">
-                  {p.perfiles?.nombre ?? 'Cliente'}
+                <p className="text-sm font-semibold text-slate-800 truncate">
+                  {p.cliente_nombre ?? p.perfiles?.nombre ?? 'Cliente'}
                 </p>
                 <p className="text-xs text-slate-400 font-mono">
-                  {p.perfiles?.codigo_casillero}
+                  {p.cliente_codigo ?? p.perfiles?.codigo_casillero ?? ''}
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  {[p.largo_cm, p.ancho_cm, p.alto_cm].filter(Boolean).join('×')} cm
+                  {[p.largo_cm, p.ancho_cm, p.alto_cm].filter(Boolean).join('×')}
+                  {p.largo_cm ? ' cm' : ''}
                   {p.peso_kg ? ` · ${p.peso_kg}kg` : ''}
                   {p.tamanio ? ` · ${p.tamanio}` : ''}
                 </p>

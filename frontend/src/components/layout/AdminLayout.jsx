@@ -1,14 +1,17 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Package, DollarSign, Users, Shield, Settings, LogOut } from 'lucide-react'
+import {
+  LayoutDashboard, Package, DollarSign, Users, Shield, LogOut,
+} from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
+import logoMini from '../../assets/logo-mini.png'
 
 const TABS = [
-  { label: 'Dashboard',  icon: LayoutDashboard, path: '/admin/dashboard'  },
-  { label: 'Paquetes',   icon: Package,         path: '/admin/paquetes'   },
-  { label: 'Tarifas',    icon: DollarSign,      path: '/admin/tarifas'    },
-  { label: 'Usuarios',   icon: Users,           path: '/admin/usuarios'   },
-  { label: 'Auditoría',  icon: Shield,          path: '/admin/auditoria'  },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+  { label: 'Paquetes',  icon: Package,         path: '/admin/paquetes'  },
+  { label: 'Tarifas',   icon: DollarSign,      path: '/admin/tarifas'   },
+  { label: 'Usuarios',  icon: Users,           path: '/admin/usuarios'  },
+  { label: 'Auditoría', icon: Shield,          path: '/admin/auditoria' },
 ]
 
 export default function AdminLayout({ children, title }) {
@@ -30,16 +33,21 @@ export default function AdminLayout({ children, title }) {
       {/* Header */}
       <div className="px-5 pt-12 pb-5" style={{ background: '#0D2B5E' }}>
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sky-300 text-xs font-medium">ADMINISTRACIÓN</p>
-            <h1 className="text-white text-xl font-bold">{title ?? 'Dashboard'}</h1>
+          <div className="flex items-center gap-3">
+            <img src={logoMini} alt="Los Líderes"
+              className="w-10 h-10 rounded-xl" />
+            <div>
+              <p className="text-sky-300 text-xs font-medium">ADMINISTRACIÓN</p>
+              <h1 className="text-white text-xl font-bold">{title ?? 'Dashboard'}</h1>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center
               text-white text-xs font-bold" style={{ background: '#1565C0' }}>
-              {nombre.slice(0,2).toUpperCase()}
+              {nombre.slice(0, 2).toUpperCase()}
             </div>
-            <button onClick={handleLogout} className="text-slate-400 hover:text-white transition">
+            <button onClick={handleLogout}
+              className="text-slate-400 hover:text-white transition p-1 active:scale-95">
               <LogOut size={18} />
             </button>
           </div>
@@ -48,7 +56,7 @@ export default function AdminLayout({ children, title }) {
 
       {children}
 
-      {/* Bottom nav — scrollable */}
+      {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white
         border-t border-slate-100 flex z-50 overflow-x-auto"
         style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
@@ -61,7 +69,8 @@ export default function AdminLayout({ children, title }) {
               style={{ color: active ? '#1565C0' : '#94a3b8' }}>
               <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
               <span className="text-[10px] font-medium whitespace-nowrap">{label}</span>
-              {active && <span className="absolute bottom-0 w-6 h-0.5 rounded-full bg-blue-600" />}
+              {active &&
+                <span className="absolute bottom-0 w-6 h-0.5 rounded-full bg-blue-600" />}
             </button>
           )
         })}

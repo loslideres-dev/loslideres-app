@@ -10,7 +10,7 @@ import Onboarding      from './pages/auth/Onboarding'
 
 // Cliente
 import Casillero       from './pages/cliente/Casillero'
-import Paquetes        from './pages/cliente/Paquetes'
+import PaquetesCliente from './pages/cliente/PaquetesCliente'
 import DetallePaquete  from './pages/cliente/DetallePaquete'
 import Perfil          from './pages/cliente/Perfil'
 
@@ -20,7 +20,7 @@ import Registros       from './pages/bodeguero/Registros'
 
 // Admin
 import Dashboard       from './pages/admin/Dashboard'
-import PaquetesAdmin   from './pages/admin/Paquetes'
+import PaquetesAdmin   from './pages/admin/PaquetesAdmin'
 import Tarifas         from './pages/admin/Tarifas'
 import Auditoria       from './pages/admin/Auditoria'
 import Usuarios        from './pages/admin/Usuarios'
@@ -35,8 +35,10 @@ function PrivateRoute({ children, roles }) {
   if (roles && roles.length > 0) {
     const tieneAcceso = roles.some(r => userRoles.includes(r))
     if (!tieneAcceso) {
-      if (userRoles.includes('admin'))     return <Navigate to="/admin/dashboard"     replace />
-      if (userRoles.includes('bodeguero')) return <Navigate to="/bodeguero/recepcion" replace />
+      if (userRoles.includes('admin'))
+        return <Navigate to="/admin/dashboard" replace />
+      if (userRoles.includes('bodeguero'))
+        return <Navigate to="/bodeguero/recepcion" replace />
       return <Navigate to="/cliente/casillero" replace />
     }
   }
@@ -66,7 +68,7 @@ export default function App() {
           <PrivateRoute roles={['cliente','admin']}><Casillero /></PrivateRoute>
         }/>
         <Route path="/cliente/paquetes" element={
-          <PrivateRoute roles={['cliente','admin']}><Paquetes /></PrivateRoute>
+          <PrivateRoute roles={['cliente','admin']}><PaquetesCliente /></PrivateRoute>
         }/>
         <Route path="/cliente/paquetes/:id" element={
           <PrivateRoute roles={['cliente','admin']}><DetallePaquete /></PrivateRoute>
@@ -101,8 +103,8 @@ export default function App() {
         }/>
 
         {/* Default */}
-        <Route path="/"  element={<Navigate to="/login" replace />} />
-        <Route path="*"  element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
 
       </Routes>
     </BrowserRouter>
