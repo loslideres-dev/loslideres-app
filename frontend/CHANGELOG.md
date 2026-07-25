@@ -1,6 +1,13 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.3.3](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.2...v0.3.3) (2026-07-25)
+
+
+### 🐛 Correcciones
+
+* navbar admin en entregas, scroll fijo en listados, campanita cliente, editar/eliminar registros bodeguero, modal y trigger de roles ([c1ee23e](https://github.com/loslideres-dev/loslideres-app/commit/c1ee23ee28b3be5a753c44f016e77a8545500b81))
+
 ### [0.3.2](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.1...v0.3.2) (2026-07-25)
 
 
