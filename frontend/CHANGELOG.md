@@ -1,6 +1,13 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.3.6](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.5...v0.3.6) (2026-07-25)
+
+
+### 🐛 Correcciones
+
+* metodo de pago del cliente debajo del precio en tarifar ([8ece95b](https://github.com/loslideres-dev/loslideres-app/commit/8ece95befbff1bfdedaf0ae074908d1a09264ede))
+
 ### [0.3.5](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.4...v0.3.5) (2026-07-25)
 
 
