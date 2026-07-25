@@ -23,7 +23,7 @@ const ROL_COLOR = {
 }
 
 const FORM_INICIAL = {
-  nombre: '', email: '', password: '', telefono: '', rol: 'cliente', direccion: '',
+  nombre: '', email: '', password: '', rol: 'cliente',
 }
 
 export default function Usuarios() {
@@ -55,23 +55,14 @@ export default function Usuarios() {
         password: form.password,
         options: {
           data: {
-            nombre:   form.nombre.trim(),
-            telefono: form.telefono.trim() || null,
-            roles:    [form.rol],
+            nombre: form.nombre.trim(),
+            roles:  [form.rol],
           },
         },
       })
       if (error) throw error
       const nuevoId = data.user?.id
       if (!nuevoId) throw new Error('No se obtuvo el ID del usuario')
-
-      // 2. Completar el perfil (dirección para clientes) — con la sesión admin
-      if (form.rol === 'cliente' && form.direccion.trim()) {
-        await supabase
-          .from('perfiles')
-          .update({ direccion_entrega: form.direccion.trim() })
-          .eq('id', nuevoId)
-      }
 
       await notificarAdmins({
         tipo:    'nuevo_usuario',
@@ -294,11 +285,6 @@ export default function Usuarios() {
             onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
               bg-white outline-none focus:ring-2 focus:ring-blue-500" />
-          <input type="tel" placeholder="Teléfono (+58...)"
-            value={form.telefono}
-            onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
-              bg-white outline-none focus:ring-2 focus:ring-blue-500" />
           <select value={form.rol}
             onChange={e => setForm(f => ({ ...f, rol: e.target.value }))}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
@@ -308,16 +294,10 @@ export default function Usuarios() {
             <option value="conductor">Conductor</option>
             <option value="admin">Administrador</option>
           </select>
-          {form.rol === 'cliente' && (
-            <textarea placeholder="Dirección de entrega en Maracaibo" rows={2}
-              value={form.direccion}
-              onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
-                bg-white outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-          )}
           <p className="text-xs text-slate-400">
             Comparte el correo y la contraseña inicial con el usuario para que
-            pueda entrar. Podrá cambiarla con "Olvidé mi contraseña".
+            pueda entrar. Si es cliente, completará su teléfono y dirección la
+            primera vez que ingrese. Podrá cambiar la contraseña con "Olvidé mi contraseña".
           </p>
           <button onClick={handleCrear} disabled={!puedeCrear}
             className="w-full py-3.5 rounded-xl text-white font-semibold text-sm

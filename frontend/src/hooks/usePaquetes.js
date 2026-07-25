@@ -93,7 +93,7 @@ export function useEntregasConductor(conductorId) {
         .from('paquetes_con_cliente')
         .select('*')
         .eq('conductor_id', conductorId)
-        .in('estado', ['EN_TRANSITO', 'EN_REPARTO'])
+        .in('estado', ['TARIFADO', 'EN_TRANSITO', 'EN_REPARTO'])
         .order('fecha_recepcion', { ascending: true })
       if (error) throw error
       return conPerfil(data)
@@ -183,7 +183,7 @@ export function useTarifar() {
   return useMutation({
     mutationFn: async ({
       id, precio_sugerido, precio_final, fecha_estimada,
-      conductor_id, anteriorEstado,
+      conductor_id, monto_traslado, metodo_pago, anteriorEstado,
     }) => {
       const { data, error } = await supabase
         .from('paquetes')
@@ -192,6 +192,8 @@ export function useTarifar() {
           precio_final,
           fecha_estimada,
           conductor_id,
+          monto_traslado: monto_traslado ?? 0,
+          metodo_pago,
           estado: 'TARIFADO',
         })
         .eq('id', id)
@@ -208,6 +210,8 @@ export function useTarifar() {
           precio_final,
           diferencia: precio_final - precio_sugerido,
           conductor_id,
+          monto_traslado,
+          metodo_pago,
         },
       })
       if (data?.cliente_id) {
@@ -239,25 +243,24 @@ export function useTarifar() {
   })
 }
 
-// ── Despachar paquete (admin) — pasa a EN_TRANSITO ────────────────────────────
-export function useDespachar() {
+// ── Poner en tránsito (CONDUCTOR) — TARIFADO → EN_TRANSITO ─────────────────────
+// El conductor lo marca cuando arranca el viaje Maicao → Maracaibo.
+export function usePonerEnTransito() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, conductor_id, monto_traslado }) => {
-      const cambios = { estado: 'EN_TRANSITO', monto_traslado }
-      if (conductor_id) cambios.conductor_id = conductor_id
+    mutationFn: async ({ id }) => {
       const { data, error } = await supabase
         .from('paquetes')
-        .update(cambios)
+        .update({ estado: 'EN_TRANSITO' })
         .eq('id', id)
         .select()
         .single()
       if (error) throw error
       await registrarAuditoria({
-        evento:    'paquete_despachado',
+        evento:    'paquete_en_transito',
         entidad:   'paquetes',
         entidadId: id,
-        valorNuevo: { estado: 'EN_TRANSITO', monto_traslado },
+        valorNuevo: { estado: 'EN_TRANSITO' },
       })
       if (data?.cliente_id) {
         await crearNotificacion({
@@ -271,9 +274,9 @@ export function useDespachar() {
       return data
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['entregas-conductor'] })
       qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
-      qc.invalidateQueries({ queryKey: ['entregas-conductor'] })
     },
   })
 }

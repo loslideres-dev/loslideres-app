@@ -82,9 +82,9 @@ export default function Registros() {
             <button key={p.id} onClick={() => setDetalle(p)}
               className="w-full bg-white rounded-2xl overflow-hidden flex items-stretch
                 shadow-sm active:scale-95 transition text-left">
-              <div className="w-20 h-20 flex-shrink-0 bg-slate-100">
+              <div className="w-20 h-20 flex-shrink-0 bg-slate-50">
                 {p.foto_url
-                  ? <img src={p.foto_url} alt="" className="w-full h-full object-cover" />
+                  ? <img src={p.foto_url} alt="" className="w-full h-full object-contain" />
                   : <div className="w-full h-full flex items-center justify-center">
                       <Package size={24} className="text-slate-300" />
                     </div>}

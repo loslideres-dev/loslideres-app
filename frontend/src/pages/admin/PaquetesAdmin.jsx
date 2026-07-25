@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Package, Loader2, MessageCircle, Send, Phone, MapPin, User, Navigation } from 'lucide-react'
-import { usePaquetesAdmin, useTarifar, useDespachar, useMarcarEntregado } from '../../hooks/usePaquetes'
+import { Package, Loader2, MessageCircle, Phone, MapPin, User, Navigation } from 'lucide-react'
+import { usePaquetesAdmin, useTarifar, useMarcarEntregado } from '../../hooks/usePaquetes'
 import { useConductores } from '../../hooks/usePerfiles'
 import { useAuthStore } from '../../store/authStore'
 import { METODOS_PAGO } from '../../constants/roles'
@@ -56,6 +56,8 @@ export default function PaquetesAdmin() {
   const [fechaEst, setFechaEst] = useState('')
   const [monto,    setMonto]    = useState('')
   const [conductorSel, setConductorSel] = useState('')
+  const [montoTraslado, setMontoTraslado] = useState('')
+  const [metodoTarifa, setMetodoTarifa] = useState('')
   const [receptor, setReceptor] = useState('')
   const [metodoPago, setMetodoPago] = useState('Efectivo')
   const [montoCobrado, setMontoCobrado] = useState('')
@@ -64,22 +66,16 @@ export default function PaquetesAdmin() {
   const { data: paquetes = [], isLoading } = usePaquetesAdmin(filtro)
   const { data: tarifas  = [] }            = useTarifas()
   const { mutateAsync: tarifar,   isPending: tarifando   } = useTarifar()
-  const { mutateAsync: despachar, isPending: despachando } = useDespachar()
   const { mutateAsync: marcarEntregado, isPending: entregando } = useMarcarEntregado()
   const { data: conductores = [] } = useConductores()
   const { user } = useAuthStore()
 
-const [modalAbiertoAuto, setModalAbiertoAuto] = useState(false)
-
-useEffect(() => {
-  if (tarificarParam && paquetes.length > 0 && !modalAbiertoAuto) {
-    const p = paquetes.find(x => x.id === tarificarParam)
-    if (p) {
-      openModal(p)
-      setModalAbiertoAuto(true)
+  useEffect(() => {
+    if (tarificarParam && paquetes.length > 0) {
+      const p = paquetes.find(x => x.id === tarificarParam)
+      if (p) openModal(p)
     }
-  }
-}, [tarificarParam, paquetes, modalAbiertoAuto])
+  }, [tarificarParam, paquetes])
 
   const openModal = (p) => {
     const sugerido = getPrecioSugerido(tarifas, p.tamanio)
@@ -87,7 +83,11 @@ useEffect(() => {
     setFechaEst('')
     setMonto('')
     setConductorSel(p.conductor_id ?? '')
+    setMontoTraslado(p.monto_traslado ? String(p.monto_traslado) : '')
+    setMetodoTarifa(p.metodo_pago ?? '')
     setReceptor('')
+    setMetodoPago(p.metodo_pago ?? 'Efectivo')
+    setMontoCobrado(p.precio_final ? String(p.precio_final) : '')
     setMetodoPago('Efectivo')
     setMontoCobrado(p.precio_final?.toString() ?? '')
     setModal(p)
@@ -99,8 +99,19 @@ useEffect(() => {
   const clienteCodigo   = modal?.cliente_codigo    ?? modal?.perfiles?.codigo_casillero  ?? '—'
   const clienteDireccion = modal?.cliente_direccion ?? ''
 
+  const esOtroConductor = conductorSel && conductorSel !== user.id
+
   const handleTarifar = async () => {
     if (!modal) return
+    // Validaciones: método obligatorio; monto obligatorio si es otro conductor
+    if (!metodoTarifa) {
+      setToast({ show: true, msg: 'Selecciona el método de pago', type: 'error' })
+      return
+    }
+    if (esOtroConductor && !montoTraslado) {
+      setToast({ show: true, msg: 'Indica el monto de traslado del conductor', type: 'error' })
+      return
+    }
     try {
       const sugerido = getPrecioSugerido(tarifas, modal.tamanio) ?? parseFloat(precio)
       await tarifar({
@@ -109,27 +120,14 @@ useEffect(() => {
         precio_final:    parseFloat(precio),
         fecha_estimada:  fechaEst || null,
         conductor_id:    conductorSel || user.id,   // sin selección → admin es el conductor
+        monto_traslado:  esOtroConductor ? (parseFloat(montoTraslado) || 0) : 0,
+        metodo_pago:     metodoTarifa,
         anteriorEstado:  modal.estado,
       })
-      setToast({ show: true, msg: '¡Precio asignado!', type: 'success' })
+      setToast({ show: true, msg: '¡Paquete tarifado y asignado!', type: 'success' })
       setModal(null)
     } catch {
       setToast({ show: true, msg: 'Error al tarifar', type: 'error' })
-    }
-  }
-
-  const handleDespachar = async () => {
-    if (!modal) return
-    try {
-      await despachar({
-        id:             modal.id,
-        conductor_id:   conductorSel || null,
-        monto_traslado: parseFloat(monto) || 0,
-      })
-      setToast({ show: true, msg: '¡Paquete despachado!', type: 'success' })
-      setModal(null)
-    } catch {
-      setToast({ show: true, msg: 'Error al despachar', type: 'error' })
     }
   }
 
@@ -192,9 +190,9 @@ useEffect(() => {
           <button key={p.id} onClick={() => openModal(p)}
             className="w-full bg-white rounded-2xl flex items-stretch
               overflow-hidden shadow-sm active:scale-95 transition text-left">
-            <div className="w-20 h-20 flex-shrink-0 bg-slate-100">
+            <div className="w-20 h-20 flex-shrink-0 bg-slate-50">
               {p.foto_url
-                ? <img src={p.foto_url} className="w-full h-full object-cover" />
+                ? <img src={p.foto_url} className="w-full h-full object-contain" />
                 : <div className="w-full h-full flex items-center justify-center">
                     <Package size={24} className="text-slate-300" />
                   </div>
@@ -385,6 +383,46 @@ useEffect(() => {
                   </p>
                 </div>
 
+                {/* Monto de traslado — solo si es OTRO conductor */}
+                {esOtroConductor && (
+                  <div className="bg-white rounded-xl p-4">
+                    <p className="text-xs text-slate-400 mb-1">
+                      Monto de traslado al conductor (USD) *
+                    </p>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2
+                        text-slate-400 text-sm font-bold">$</span>
+                      <input type="number" inputMode="decimal" value={montoTraslado}
+                        onChange={e => setMontoTraslado(e.target.value)}
+                        placeholder="Ej. 5"
+                        className="w-full pl-8 pr-16 py-3 rounded-xl border border-slate-200
+                          text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2
+                        text-slate-400 text-xs">USD</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Método de pago — obligatorio */}
+                <div className="bg-white rounded-xl p-4">
+                  <p className="text-xs text-slate-400 mb-2">Método de pago *</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {METODOS_PAGO.map(m => (
+                      <button key={m} onClick={() => setMetodoTarifa(m)}
+                        className={`py-2.5 rounded-xl text-xs font-semibold border-2
+                          transition active:scale-95
+                          ${metodoTarifa === m
+                            ? 'text-white'
+                            : 'border-slate-200 text-slate-600 bg-white'}`}
+                        style={metodoTarifa === m
+                          ? { background: '#1565C0', borderColor: '#1565C0' }
+                          : {}}>
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button onClick={handleTarifar}
                   disabled={!precio || tarifando}
                   className="w-full py-4 rounded-2xl text-white font-semibold text-sm
@@ -406,64 +444,6 @@ useEffect(() => {
                     <MessageCircle size={18} /> Notificar precio por WhatsApp
                   </a>
                 )}
-              </div>
-            </>
-          )}
-
-          {/* ── DESPACHAR (estado TARIFADO) ── */}
-          {modal.estado === 'TARIFADO' && (
-            <>
-              <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
-                DESPACHAR
-              </p>
-              <div className="space-y-3">
-                <div className="bg-white rounded-xl p-4 flex items-center justify-between">
-                  <p className="text-sm text-slate-500">Precio confirmado</p>
-                  <p className="text-xl font-black" style={{ color: '#1565C0' }}>
-                    ${modal.precio_final} USD
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-xl p-4">
-                  <p className="text-xs text-slate-400 mb-1">
-                    Monto de traslado al conductor (USD)
-                  </p>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2
-                      text-slate-400 text-sm font-bold">$</span>
-                    <input type="number" value={monto}
-                      onChange={e => setMonto(e.target.value)}
-                      placeholder="Ej. 5"
-                      className="w-full pl-8 pr-16 py-3 rounded-xl border border-slate-200
-                        text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500" />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2
-                      text-slate-400 text-xs">USD</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  {clienteTelefono && (
-                    <a href={whatsappUrl(clienteTelefono,
-                        `Hola ${clienteNombre}, tu paquete ${modal.codigo} está en camino a Maracaibo 🚚\nTe avisamos cuando llegue a tu dirección.`
-                      )}
-                      target="_blank" rel="noreferrer"
-                      className="flex-1 py-4 rounded-2xl border-2 border-green-500
-                        text-green-600 font-semibold text-sm flex items-center
-                        justify-center gap-2 active:scale-95 transition">
-                      <MessageCircle size={16} /> WhatsApp
-                    </a>
-                  )}
-                  <button onClick={handleDespachar} disabled={despachando}
-                    className="flex-1 py-4 rounded-2xl text-white font-semibold text-sm
-                      flex items-center justify-center gap-2 disabled:opacity-50
-                      active:scale-95 transition"
-                    style={{ background: '#1565C0' }}>
-                    {despachando
-                      ? <Loader2 size={18} className="animate-spin" />
-                      : <Send size={16} />}
-                    Despachar
-                  </button>
-                </div>
               </div>
             </>
           )}

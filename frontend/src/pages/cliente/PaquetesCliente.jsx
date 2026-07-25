@@ -33,10 +33,10 @@ function PaqueteCard({ paquete, onClick }) {
         flex items-stretch active:scale-95 transition text-left"
     >
       {/* Foto */}
-      <div className="w-24 h-24 flex-shrink-0 bg-slate-100">
+      <div className="w-24 h-24 flex-shrink-0 bg-slate-50">
         {paquete.foto_url
           ? <img src={paquete.foto_url} alt="paquete"
-              className="w-full h-full object-cover" />
+              className="w-full h-full object-contain" />
           : <div className="w-full h-full flex items-center justify-center">
               <Package size={28} className="text-slate-300" />
             </div>

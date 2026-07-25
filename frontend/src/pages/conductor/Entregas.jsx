@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import {
-  Package, Phone, MapPin, MessageCircle, Truck, Check, Loader2, RefreshCw, Navigation,
+  Package, Phone, MapPin, MessageCircle, Truck, Check, Loader2, RefreshCw, Navigation, Plane,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import {
-  useEntregasConductor, useIniciarReparto, useMarcarEntregado,
+  useEntregasConductor, usePonerEnTransito, useIniciarReparto, useMarcarEntregado,
 } from '../../hooks/usePaquetes'
-import { METODOS_PAGO } from '../../constants/roles'
 import ConductorLayout from '../../components/layout/ConductorLayout'
 import EstadoBadge from '../../components/ui/EstadoBadge'
 import Modal from '../../components/ui/Modal'
@@ -32,19 +31,25 @@ export default function Entregas() {
   const { user } = useAuthStore()
   const [modal,    setModal]    = useState(null)
   const [receptor, setReceptor] = useState('')
-  const [metodo,   setMetodo]   = useState('Efectivo')
-  const [monto,    setMonto]    = useState('')
   const [toast,    setToast]    = useState({ show: false, msg: '', type: 'success' })
 
   const { data: entregas = [], isLoading, refetch } = useEntregasConductor(user?.id)
+  const { mutateAsync: ponerEnTransito, isPending: enviando } = usePonerEnTransito()
   const { mutateAsync: iniciarReparto, isPending: iniciando } = useIniciarReparto()
   const { mutateAsync: marcarEntregado, isPending: entregando } = useMarcarEntregado()
 
   const abrirEntrega = (p) => {
     setReceptor('')
-    setMetodo('Efectivo')
-    setMonto(p.precio_final?.toString() ?? '')
     setModal(p)
+  }
+
+  const handlePonerTransito = async (p) => {
+    try {
+      await ponerEnTransito({ id: p.id })
+      setToast({ show: true, msg: 'Paquete en tránsito ✈️', type: 'success' })
+    } catch {
+      setToast({ show: true, msg: 'Error al poner en tránsito', type: 'error' })
+    }
   }
 
   const handleIniciar = async (p) => {
@@ -62,8 +67,8 @@ export default function Entregas() {
       await marcarEntregado({
         id:              modal.id,
         nombre_receptor: receptor.trim(),
-        metodo_pago:     metodo,
-        monto_cobrado:   parseFloat(monto) || null,
+        metodo_pago:     modal.metodo_pago ?? null,
+        monto_cobrado:   modal.precio_final ?? null,
         anteriorEstado:  modal.estado,
       })
       setToast({ show: true, msg: '¡Paquete entregado! ✓', type: 'success' })
@@ -122,9 +127,9 @@ export default function Entregas() {
 
               {/* Cabecera con foto */}
               <div className="flex items-stretch">
-                <div className="w-20 h-20 flex-shrink-0 bg-slate-100">
+                <div className="w-20 h-20 flex-shrink-0 bg-slate-50">
                   {p.foto_url
-                    ? <img src={p.foto_url} alt="" className="w-full h-full object-cover" />
+                    ? <img src={p.foto_url} alt="" className="w-full h-full object-contain" />
                     : <div className="w-full h-full flex items-center justify-center">
                         <Package size={24} className="text-slate-300" />
                       </div>}
@@ -145,7 +150,7 @@ export default function Entregas() {
 
               {/* Dirección y teléfono */}
               <div className="px-4 pb-3 space-y-2">
-                {p.cliente_direccion && (
+                {p.estado === 'EN_REPARTO' && p.cliente_direccion && (
                   <div className="space-y-2">
                     <div className="flex items-start gap-2 bg-slate-50 rounded-xl px-3 py-2.5">
                       <MapPin size={14} className="flex-shrink-0 mt-0.5"
@@ -195,7 +200,19 @@ export default function Entregas() {
                 </div>
 
                 {/* Acción principal según estado */}
-                {p.estado === 'EN_TRANSITO' ? (
+                {p.estado === 'TARIFADO' && (
+                  <button onClick={() => handlePonerTransito(p)} disabled={enviando}
+                    className="w-full py-3 rounded-xl text-white font-semibold text-sm
+                      flex items-center justify-center gap-2 active:scale-95 transition
+                      disabled:opacity-50"
+                    style={{ background: '#0D2B5E' }}>
+                    {enviando
+                      ? <Loader2 size={16} className="animate-spin" />
+                      : <Plane size={16} />}
+                    Poner en tránsito
+                  </button>
+                )}
+                {p.estado === 'EN_TRANSITO' && (
                   <button onClick={() => handleIniciar(p)} disabled={iniciando}
                     className="w-full py-3 rounded-xl border-2 font-semibold text-sm
                       flex items-center justify-center gap-2 active:scale-95 transition
@@ -206,7 +223,8 @@ export default function Entregas() {
                       : <Truck size={16} />}
                     Iniciar reparto
                   </button>
-                ) : (
+                )}
+                {p.estado === 'EN_REPARTO' && (
                   <button onClick={() => abrirEntrega(p)}
                     className="w-full py-3 rounded-xl text-white font-semibold text-sm
                       flex items-center justify-center gap-2 active:scale-95 transition"
@@ -230,9 +248,20 @@ export default function Entregas() {
             <p className="text-sm font-semibold text-slate-800">
               {modal.cliente_nombre}
             </p>
-            <p className="text-lg font-black mt-1" style={{ color: '#1565C0' }}>
-              Cobrar ${modal.precio_final} USD
-            </p>
+            <div className="flex items-center justify-between mt-2">
+              <div>
+                <p className="text-xs text-slate-400">A cobrar</p>
+                <p className="text-lg font-black" style={{ color: '#1565C0' }}>
+                  ${modal.precio_final} USD
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-slate-400">Método de pago</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  {modal.metodo_pago ?? '—'}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -243,39 +272,6 @@ export default function Entregas() {
                 placeholder="Nombre de quien recibe"
                 className="w-full px-4 py-3 rounded-xl border border-slate-200
                   text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-
-            <div className="bg-white rounded-xl p-4">
-              <p className="text-xs text-slate-400 mb-2">Método de pago</p>
-              <div className="grid grid-cols-2 gap-2">
-                {METODOS_PAGO.map(m => (
-                  <button key={m} onClick={() => setMetodo(m)}
-                    className={`py-2.5 rounded-xl text-xs font-semibold border-2
-                      transition active:scale-95
-                      ${metodo === m
-                        ? 'text-white'
-                        : 'border-slate-200 text-slate-600 bg-white'}`}
-                    style={metodo === m
-                      ? { background: '#1565C0', borderColor: '#1565C0' }
-                      : {}}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl p-4">
-              <p className="text-xs text-slate-400 mb-1">Monto cobrado (USD)</p>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2
-                  text-slate-400 text-sm font-bold">$</span>
-                <input type="number" inputMode="decimal" value={monto}
-                  onChange={e => setMonto(e.target.value)}
-                  className="w-full pl-8 pr-16 py-3 rounded-xl border border-slate-200
-                    text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500" />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2
-                  text-slate-400 text-xs">USD</span>
-              </div>
             </div>
 
             <button onClick={handleEntregar}
@@ -290,7 +286,8 @@ export default function Entregas() {
               Confirmar entrega
             </button>
             <p className="text-xs text-center text-slate-400">
-              La fecha y hora de entrega se registran automáticamente
+              El método de pago y monto los definió Administración.
+              La fecha de entrega se registra automáticamente.
             </p>
           </div>
         </Modal>
