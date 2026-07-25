@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
 import { ROLE_REDIRECT } from '../../constants/roles'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import logo from '../../assets/logo.png'
+import logoFull from '../../assets/logo-full.png'
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
 const loginSchema = z.object({
@@ -364,15 +364,15 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#F4F6FA' }}>
 
-      {/* Header con logo real */}
+      {/* Header con logo completo */}
       <div className="flex flex-col items-center justify-center pt-14 pb-10 px-6"
         style={{ background: '#0D2B5E' }}>
-        <img src={logo} alt="Los Líderes Encomiendas"
-          className="w-24 h-24 mb-4 rounded-3xl shadow-lg" />
-        <h1 className="text-white text-2xl font-bold tracking-tight">Los Líderes</h1>
-        <p className="text-sky-300 text-sm mt-1">Encomiendas</p>
-        <p className="text-slate-400 text-xs mt-3 text-center">
-          De Maicao a tu puerta en Maracaibo
+        <div className="bg-white rounded-3xl px-6 py-5 shadow-lg">
+          <img src={logoFull} alt="Los Líderes Encomiendas"
+            className="w-56 h-auto" />
+        </div>
+        <p className="text-slate-400 text-xs mt-5 text-center">
+          Recibe tus paquetes en Maracaibo con seguridad y rapidez.
         </p>
       </div>
 
