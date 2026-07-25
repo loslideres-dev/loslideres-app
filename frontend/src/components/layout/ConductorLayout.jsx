@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LogOut, ArrowLeft, Truck, BarChart3,
-  LayoutDashboard, Package, Users, BarChart3,
+  LayoutDashboard, Package, Users,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
