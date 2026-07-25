@@ -1,6 +1,13 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.3.4](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.3...v0.3.4) (2026-07-25)
+
+
+### ✨ Nuevas funcionalidades
+
+* flujo de estados por conductor, metodo de pago en tarifado, form usuario simplificado, imagenes completas en cards ([045f86f](https://github.com/loslideres-dev/loslideres-app/commit/045f86f0ba275bca12a3690efa7f4b68e2aaf360))
+
 ### [0.3.3](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.2...v0.3.3) (2026-07-25)
 
 
