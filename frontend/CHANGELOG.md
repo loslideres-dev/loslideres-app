@@ -1,6 +1,13 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [0.3.0](https://github.com/loslideres-dev/loslideres-app/compare/v0.2.1...v0.3.0) (2026-07-25)
+
+
+### ✨ Nuevas funcionalidades
+
+* notificaciones in-app, reportes conductor/bodeguero, modulo conductor, modal detalle usuario ([161dcb1](https://github.com/loslideres-dev/loslideres-app/commit/161dcb15730be04f615e1b0463700297b53e19ec))
+
 ### [0.2.1](https://github.com/loslideres-dev/loslideres-app/compare/v0.0.2...v0.2.1) (2026-07-25)
 
 
