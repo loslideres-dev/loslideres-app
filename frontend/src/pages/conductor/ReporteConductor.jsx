@@ -74,15 +74,6 @@ export default function ReporteConductor() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-slate-500">Total cobrado a clientes</p>
-                <p className="text-lg font-black text-slate-800">
-                  ${data?.totalCobrado ?? 0} USD
-                </p>
-              </div>
-            </div>
-
             {/* Detalle */}
             <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
               DETALLE DE ENTREGAS
