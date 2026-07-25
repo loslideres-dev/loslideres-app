@@ -359,6 +359,26 @@ export default function PaquetesAdmin() {
                   </div>
                 </div>
 
+                {/* Método de pago — obligatorio */}
+                <div className="bg-white rounded-xl p-4">
+                  <p className="text-xs text-slate-400 mb-2">Método de pago del cliente *</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {METODOS_PAGO.map(m => (
+                      <button key={m} onClick={() => setMetodoTarifa(m)}
+                        className={`py-2.5 rounded-xl text-xs font-semibold border-2
+                          transition active:scale-95
+                          ${metodoTarifa === m
+                            ? 'text-white'
+                            : 'border-slate-200 text-slate-600 bg-white'}`}
+                        style={metodoTarifa === m
+                          ? { background: '#1565C0', borderColor: '#1565C0' }
+                          : {}}>
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="bg-white rounded-xl p-4">
                   <p className="text-xs text-slate-400 mb-1">Fecha estimada de entrega</p>
                   <input type="date" value={fechaEst}
@@ -402,26 +422,6 @@ export default function PaquetesAdmin() {
                     </div>
                   </div>
                 )}
-
-                {/* Método de pago — obligatorio */}
-                <div className="bg-white rounded-xl p-4">
-                  <p className="text-xs text-slate-400 mb-2">Método de pago *</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {METODOS_PAGO.map(m => (
-                      <button key={m} onClick={() => setMetodoTarifa(m)}
-                        className={`py-2.5 rounded-xl text-xs font-semibold border-2
-                          transition active:scale-95
-                          ${metodoTarifa === m
-                            ? 'text-white'
-                            : 'border-slate-200 text-slate-600 bg-white'}`}
-                        style={metodoTarifa === m
-                          ? { background: '#1565C0', borderColor: '#1565C0' }
-                          : {}}>
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 <button onClick={handleTarifar}
                   disabled={!precio || tarifando}
