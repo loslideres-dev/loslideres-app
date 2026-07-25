@@ -1,6 +1,13 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.3.9](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.8...v0.3.9) (2026-07-25)
+
+
+### 🐛 Correcciones
+
+* quitar total cobrado a clientes del reporte del conductor (info confidencial) ([a56de80](https://github.com/loslideres-dev/loslideres-app/commit/a56de80f351cebea39e4c4d4f5446f53745b97dc))
+
 ### [0.3.8](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.7...v0.3.8) (2026-07-25)
 
 
