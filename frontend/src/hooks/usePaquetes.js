@@ -365,3 +365,59 @@ export function useMarcarEntregado() {
     },
   })
 }
+
+// ── Actualizar paquete (bodeguero, solo si está en RECIBIDO) ──────────────────
+export function useActualizarPaquete() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...campos }) => {
+      const { data, error } = await supabase
+        .from('paquetes')
+        .update(campos)
+        .eq('id', id)
+        .eq('estado', 'RECIBIDO')   // seguridad extra: solo editable en RECIBIDO
+        .select()
+        .single()
+      if (error) throw error
+      await registrarAuditoria({
+        evento:    'paquete_editado',
+        entidad:   'paquetes',
+        entidadId: id,
+        valorNuevo: campos,
+      })
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['paquetes-hoy'] })
+      qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+    },
+  })
+}
+
+// ── Eliminar paquete (bodeguero, solo si está en RECIBIDO) ────────────────────
+export function useEliminarPaquete() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, codigo }) => {
+      const { error } = await supabase
+        .from('paquetes')
+        .delete()
+        .eq('id', id)
+        .eq('estado', 'RECIBIDO')
+      if (error) throw error
+      await registrarAuditoria({
+        evento:    'paquete_eliminado',
+        entidad:   'paquetes',
+        entidadId: id,
+        valorAnterior: { codigo },
+      })
+      return true
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['paquetes-hoy'] })
+      qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+    },
+  })
+}

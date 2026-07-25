@@ -11,8 +11,7 @@ function BottomNav() {
   const navigate     = useNavigate()
   const { pathname } = useLocation()
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white
-      border-t border-slate-100 flex z-50"
+    <nav className="flex-shrink-0 bg-white border-t border-slate-100 flex z-40"
       style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
       {TABS.map(({ label, icon: Icon, path }) => {
         const active = pathname.startsWith(path.split('/').slice(0,3).join('/'))
@@ -32,7 +31,7 @@ function BottomNav() {
 
 export default function ClienteLayout({ children }) {
   return (
-    <div className="min-h-screen pb-20 max-w-lg mx-auto relative"
+    <div className="h-[100dvh] flex flex-col max-w-lg mx-auto overflow-hidden"
       style={{ background: '#F4F6FA' }}>
       {children}
       <BottomNav />

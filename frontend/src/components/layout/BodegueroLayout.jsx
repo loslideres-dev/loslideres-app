@@ -2,13 +2,13 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ScanLine, List, BarChart3, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
-import NotifBell from '../ui/NotifBell'
 import logoMini from '../../assets/logo-mini.png'
+import NotifBell from '../ui/NotifBell'
 
 const TABS = [
-  { label: 'Registrar',     icon: ScanLine,   path: '/bodeguero/recepcion' },
-  { label: 'Mis registros', icon: List,       path: '/bodeguero/registros' },
-  { label: 'Reporte',       icon: BarChart3,  path: '/bodeguero/reporte'   },
+  { label: 'Registrar',     icon: ScanLine,  path: '/bodeguero/recepcion' },
+  { label: 'Mis registros', icon: List,      path: '/bodeguero/registros' },
+  { label: 'Reporte',       icon: BarChart3, path: '/bodeguero/reporte'   },
 ]
 
 export default function BodegueroLayout({ children }) {
@@ -24,15 +24,14 @@ export default function BodegueroLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen pb-20 max-w-lg mx-auto relative"
+    <div className="h-[100dvh] flex flex-col max-w-lg mx-auto overflow-hidden"
       style={{ background: '#F4F6FA' }}>
 
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-12 pb-4"
+      {/* Top bar (fijo) */}
+      <div className="flex-shrink-0 flex items-center justify-between px-5 pt-12 pb-4"
         style={{ background: '#0D2B5E' }}>
         <div className="flex items-center gap-3">
-          <img src={logoMini} alt="Los Líderes"
-            className="w-10 h-10 rounded-xl" />
+          <img src={logoMini} alt="Los Líderes" className="w-10 h-10 rounded-xl" />
           <div>
             <p className="text-sky-300 text-xs">BODEGA MAICAO</p>
             <h1 className="text-white text-lg font-bold">{nombre}</h1>
@@ -47,11 +46,13 @@ export default function BodegueroLayout({ children }) {
         </div>
       </div>
 
-      {children}
+      {/* Contenido scrolleable (único scroller) */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {children}
+      </div>
 
-      {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white
-        border-t border-slate-100 flex z-50"
+      {/* Bottom nav (fijo) */}
+      <nav className="flex-shrink-0 bg-white border-t border-slate-100 flex z-40"
         style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
         {TABS.map(({ label, icon: Icon, path }) => {
           const active = pathname === path

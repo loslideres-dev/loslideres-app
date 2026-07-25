@@ -11,7 +11,7 @@ export default function Modal({ open, onClose, title, children }) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center"
+    <div className="fixed inset-0 z-[60] flex justify-center"
       style={{ background: 'rgba(13,43,94,0.4)' }}>
 
       {/* Contenedor tipo móvil — máximo ancho como el resto de la app */}
@@ -31,8 +31,9 @@ export default function Modal({ open, onClose, title, children }) {
           <h3 className="text-base font-semibold text-slate-800 truncate">{title}</h3>
         </div>
 
-        {/* Contenido scrolleable */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 pb-10">
+        {/* Contenido scrolleable — padding inferior generoso para no cortar nada */}
+        <div className="flex-1 overflow-y-auto px-5 py-5"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 48px)' }}>
           {children}
         </div>
       </div>

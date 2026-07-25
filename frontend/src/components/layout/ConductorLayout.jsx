@@ -1,5 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LogOut, ArrowLeft, Truck, BarChart3 } from 'lucide-react'
+import {
+  LogOut, ArrowLeft, Truck, BarChart3,
+  LayoutDashboard, Package, DollarSign, Users,
+} from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
 import logoMini from '../../assets/logo-mini.png'
@@ -19,11 +22,11 @@ export default function ConductorLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen pb-24 max-w-lg mx-auto"
+    <div className="h-[100dvh] flex flex-col max-w-lg mx-auto overflow-hidden"
       style={{ background: '#F4F6FA' }}>
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-12 pb-4"
+      {/* Header (fijo) */}
+      <div className="flex-shrink-0 flex items-center justify-between px-5 pt-12 pb-4"
         style={{ background: '#0D2B5E' }}>
         <div className="flex items-center gap-3">
           {esAdmin && (
@@ -51,10 +54,13 @@ export default function ConductorLayout({ children }) {
         </div>
       </div>
 
-      {children}
+      {/* Contenido scrolleable */}
+      <div className="flex-1 overflow-y-auto">
+        {children}
+      </div>
 
-      {/* Bottom nav — solo para conductores puros (el admin usa su propio nav) */}
-      {!esAdmin && <ConductorNav />}
+      {/* Bottom nav — admin ve su nav completo, conductor ve el suyo */}
+      {esAdmin ? <AdminNav /> : <ConductorNav />}
     </div>
   )
 }
@@ -66,20 +72,39 @@ function ConductorNav() {
     { label: 'Entregas', icon: Truck,     path: '/conductor/entregas' },
     { label: 'Reporte',  icon: BarChart3, path: '/conductor/reporte'  },
   ]
+  return <NavBar tabs={TABS} pathname={pathname} navigate={navigate} />
+}
+
+function AdminNav() {
+  const navigate     = useNavigate()
+  const { pathname } = useLocation()
+  const TABS = [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard'    },
+    { label: 'Paquetes',  icon: Package,         path: '/admin/paquetes'     },
+    { label: 'Entregas',  icon: Truck,           path: '/conductor/entregas' },
+    { label: 'Tarifas',   icon: DollarSign,      path: '/admin/tarifas'      },
+    { label: 'Usuarios',  icon: Users,           path: '/admin/usuarios'     },
+  ]
+  return <NavBar tabs={TABS} pathname={pathname} navigate={navigate} small />
+}
+
+function NavBar({ tabs, pathname, navigate, small }) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white
-      border-t border-slate-100 flex z-40"
+    <nav className="flex-shrink-0 bg-white border-t border-slate-100 flex z-40"
       style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
-      {TABS.map(({ label, icon: Icon, path }) => {
+      {tabs.map(({ label, icon: Icon, path }) => {
         const active = pathname === path
         return (
           <button key={path} onClick={() => navigate(path)}
-            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 relative"
+            className="flex-1 min-w-[60px] flex flex-col items-center justify-center
+              gap-1 py-3 relative"
             style={{ color: active ? '#1565C0' : '#94a3b8' }}>
-            <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
-            <span className="text-xs font-medium">{label}</span>
+            <Icon size={small ? 20 : 22} strokeWidth={active ? 2.5 : 1.8} />
+            <span className={`${small ? 'text-[10px]' : 'text-xs'} font-medium whitespace-nowrap`}>
+              {label}
+            </span>
             {active &&
-              <span className="absolute bottom-0 w-8 h-0.5 rounded-full bg-blue-600" />}
+              <span className="absolute bottom-0 w-6 h-0.5 rounded-full bg-blue-600" />}
           </button>
         )
       })}

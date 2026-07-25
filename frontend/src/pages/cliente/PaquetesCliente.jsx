@@ -6,6 +6,7 @@ import { usePaquetes } from '../../hooks/usePaquetes'
 import { useMiPerfil } from '../../hooks/usePerfiles'
 import ClienteLayout from '../../components/layout/ClienteLayout'
 import EstadoBadge from '../../components/ui/EstadoBadge'
+import NotifBell from '../../components/ui/NotifBell'
 
 const FILTROS = [
   { label: 'Todos',       value: null          },
@@ -118,17 +119,20 @@ export default function PaquetesCliente() {
   return (
     <ClienteLayout>
 
-      {/* ── Header ── */}
-      <div className="px-5 pt-12 pb-5" style={{ background: '#0D2B5E' }}>
+      {/* ── Header (fijo) ── */}
+      <div className="flex-shrink-0 px-5 pt-12 pb-5" style={{ background: '#0D2B5E' }}>
         <div className="flex items-center justify-between mb-1">
           <div>
             <p className="text-sky-300 text-xs mb-0.5">Casillero {codigo}</p>
             <h1 className="text-white text-xl font-bold">Mis paquetes</h1>
           </div>
-          <button onClick={() => refetch()}
-            className="text-slate-400 hover:text-white transition p-1">
-            <RefreshCw size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <NotifBell />
+            <button onClick={() => refetch()}
+              className="text-slate-400 hover:text-white transition p-1">
+              <RefreshCw size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Contadores */}
@@ -149,8 +153,8 @@ export default function PaquetesCliente() {
         )}
       </div>
 
-      {/* ── Filtros ── */}
-      <div className="px-5 py-3 overflow-x-auto">
+      {/* ── Filtros (fijos) ── */}
+      <div className="flex-shrink-0 px-5 py-3 overflow-x-auto bg-[#F4F6FA]">
         <div className="flex gap-2 w-max">
           {FILTROS.map(({ label, value }) => (
             <button key={label} onClick={() => setFiltro(value)}
@@ -168,8 +172,8 @@ export default function PaquetesCliente() {
         </div>
       </div>
 
-      {/* ── Lista ── */}
-      <div className="px-5 space-y-3 pb-4">
+      {/* ── Lista (única que scrollea) ── */}
+      <div className="flex-1 overflow-y-auto px-5 space-y-3 pb-6 pt-1">
         {isLoading && (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent

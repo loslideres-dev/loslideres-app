@@ -7,6 +7,7 @@ import { useMiPerfil } from '../../hooks/usePerfiles'
 import ClienteLayout from '../../components/layout/ClienteLayout'
 import Toast from '../../components/ui/Toast'
 import Tour from '../../components/ui/Tour'
+import NotifBell from '../../components/ui/NotifBell'
 import { BODEGA_INFO } from '../../constants/roles'
 
 function buildDireccion(nombre, codigo) {
@@ -59,14 +60,15 @@ export default function Casillero() {
 
       <Toast message="¡Dirección copiada!" show={toast} onHide={() => setToast(false)} />
 
-      {/* ── Header ── */}
-      <div className="px-5 pt-12 pb-6" style={{ background: '#0D2B5E' }}>
+      {/* ── Header (fijo) ── */}
+      <div className="flex-shrink-0 px-5 pt-12 pb-6" style={{ background: '#0D2B5E' }}>
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-sky-300 text-xs mb-0.5">MAICAO · CO</p>
             <h1 className="text-white text-xl font-bold">Mi casillero</h1>
           </div>
           <div className="flex items-center gap-3">
+            <NotifBell />
             <div className="w-9 h-9 rounded-full flex items-center justify-center
               text-white text-sm font-bold overflow-hidden"
               style={{ background: '#1565C0' }}>
@@ -94,6 +96,9 @@ export default function Casillero() {
           <p className="text-slate-400 text-xs">Este código identifica tus paquetes</p>
         </div>
       </div>
+
+      {/* Contenido scrolleable */}
+      <div className="flex-1 overflow-y-auto pb-6">
 
       {/* Alerta perfil incompleto */}
       {perfilIncompleto && (
@@ -170,6 +175,7 @@ export default function Casillero() {
           </div>
           <ChevronRight size={20} className="text-slate-300" />
         </button>
+      </div>
       </div>
     </ClienteLayout>
   )
