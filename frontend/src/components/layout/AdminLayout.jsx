@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Package, DollarSign, Users, Truck, LogOut,
+  LayoutDashboard, Package, Users, Truck, BarChart3, Settings, LogOut,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
@@ -8,11 +8,11 @@ import logoMini from '../../assets/logo-mini.png'
 import NotifBell from '../ui/NotifBell'
 
 const TABS = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard'   },
-  { label: 'Paquetes',  icon: Package,         path: '/admin/paquetes'    },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard'    },
+  { label: 'Paquetes',  icon: Package,         path: '/admin/paquetes'     },
   { label: 'Entregas',  icon: Truck,           path: '/conductor/entregas' },
-  { label: 'Tarifas',   icon: DollarSign,      path: '/admin/tarifas'     },
-  { label: 'Usuarios',  icon: Users,           path: '/admin/usuarios'    },
+  { label: 'Usuarios',  icon: Users,           path: '/admin/usuarios'     },
+  { label: 'Reportes',  icon: BarChart3,       path: '/admin/reportes'     },
 ]
 
 export default function AdminLayout({ children, title }) {
@@ -42,6 +42,11 @@ export default function AdminLayout({ children, title }) {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/admin/tarifas')}
+              className="text-slate-300 hover:text-white transition p-1 active:scale-95"
+              title="Configuración de tarifas">
+              <Settings size={20} />
+            </button>
             <NotifBell />
             <div className="w-8 h-8 rounded-full flex items-center justify-center
               text-white text-xs font-bold" style={{ background: '#1565C0' }}>
