@@ -7,13 +7,16 @@
     "node": "20.x"
   },
   "scripts": {
+    "prebuild": "node gen-version.js",
+    "predev": "node gen-version.js",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "release": "standard-version",
-    "release:minor": "standard-version --release-as minor",
-    "release:major": "standard-version --release-as major"
+    "genversion": "node gen-version.js",
+    "release": "standard-version && node gen-version.js",
+    "release:minor": "standard-version --release-as minor && node gen-version.js",
+    "release:major": "standard-version --release-as major && node gen-version.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

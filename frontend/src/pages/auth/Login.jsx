@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/authStore'
 import { ROLE_REDIRECT } from '../../constants/roles'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import logoFull from '../../assets/logo-full.png'
+import { useVersion } from '../../hooks/useVersion'
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
 const loginSchema = z.object({
@@ -370,6 +371,7 @@ function RegisterForm({ onSwitch }) {
 // ── PANTALLA PRINCIPAL ────────────────────────────────────────────────────────
 export default function Login() {
   const [mode, setMode] = useState('login')
+  const { version, build } = useVersion()
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#F4F6FA' }}>
@@ -395,7 +397,7 @@ export default function Login() {
           }
         </div>
         <p className="text-xs text-slate-400 mt-5 mb-8 text-center">
-          Los Líderes Encomiendas · v{import.meta.env.VITE_APP_VERSION}
+          Los Líderes Encomiendas · v{version} (build {build})
         </p>
       </div>
     </div>
