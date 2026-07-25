@@ -1,6 +1,13 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.3.8](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.7...v0.3.8) (2026-07-25)
+
+
+### 🐛 Correcciones
+
+* import duplicado de BarChart3 en ConductorLayout ([72abacd](https://github.com/loslideres-dev/loslideres-app/commit/72abacd87438aa265534b04e05a3711d30f5107f))
+
 ### [0.3.7](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.6...v0.3.7) (2026-07-25)
 
 
