@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Forzar modo claro siempre, ignorando el modo oscuro del sistema */
+/* Forzar modo claro siempre */
 :root {
   color-scheme: only light;
 }
@@ -10,7 +10,20 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Evita que el navegador invierta colores en modo oscuro */
-* {
-  forced-color-adjust: none;
+/* Samsung Internet — desactiva el dark mode forzado */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  html {
+    filter: none !important;
+  }
+}
+
+/* Bloquea la inversión de colores en navegadores que la fuerzan */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: only light;
+  }
+  html, body {
+    background-color: #F4F6FA !important;
+    color: #1a1a1a !important;
+  }
 }
