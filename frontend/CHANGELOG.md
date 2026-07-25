@@ -1,6 +1,13 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.3.2](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.1...v0.3.2) (2026-07-25)
+
+
+### 📝 Documentación
+
+* README completo con stack, funcionalidades y arquitectura ([d3fb166](https://github.com/loslideres-dev/loslideres-app/commit/d3fb16652bec898ffab68cdfd9a3adc4bae15f32))
+
 ### [0.3.1](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.0...v0.3.1) (2026-07-25)
 
 
