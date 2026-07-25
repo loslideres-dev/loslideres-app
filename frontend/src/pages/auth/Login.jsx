@@ -61,7 +61,11 @@ function LoginForm({ onSwitch }) {
 
   const checkOnboarding = async (user) => {
     const roles = user?.user_metadata?.roles ?? ['cliente']
-    if (roles.includes('admin') || roles.includes('bodeguero')) return false
+    // Solo los clientes puros pasan por onboarding.
+    // Admin, bodeguero y conductor van directo a su panel.
+    if (roles.includes('admin') || roles.includes('bodeguero') || roles.includes('conductor')) {
+      return false
+    }
     const { data: perfil } = await supabase
       .from('perfiles')
       .select('telefono, direccion_entrega')
@@ -80,7 +84,13 @@ function LoginForm({ onSwitch }) {
         navigate('/onboarding', { replace: true }); return
       }
       const roles = data.user?.user_metadata?.roles ?? ['cliente']
-      navigate(ROLE_REDIRECT[roles[0]] ?? '/cliente/casillero', { replace: true })
+      // Prioridad de redirección por rol
+      const destino =
+        roles.includes('admin')     ? '/admin/dashboard'     :
+        roles.includes('bodeguero') ? '/bodeguero/recepcion' :
+        roles.includes('conductor') ? '/conductor/entregas'  :
+        '/cliente/casillero'
+      navigate(destino, { replace: true })
     } catch {
       setError('Correo o contraseña incorrectos')
     } finally {

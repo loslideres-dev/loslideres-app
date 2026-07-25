@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Package, Loader2, MessageCircle, Send, Phone, MapPin, User } from 'lucide-react'
-import { usePaquetesAdmin, useTarifar, useDespachar } from '../../hooks/usePaquetes'
+import { Package, Loader2, MessageCircle, Send, Phone, MapPin, User, Navigation } from 'lucide-react'
+import { usePaquetesAdmin, useTarifar, useDespachar, useMarcarEntregado } from '../../hooks/usePaquetes'
+import { useConductores } from '../../hooks/usePerfiles'
+import { useAuthStore } from '../../store/authStore'
+import { METODOS_PAGO } from '../../constants/roles'
 import { useTarifas, getPrecioSugerido } from '../../hooks/useTarifas'
 import AdminLayout from '../../components/layout/AdminLayout'
 import EstadoBadge from '../../components/ui/EstadoBadge'
@@ -19,6 +22,11 @@ const FILTROS = [
 function whatsappUrl(telefono, mensaje) {
   const num = (telefono ?? '').replace(/\D/g, '')
   return `https://wa.me/${num}?text=${encodeURIComponent(mensaje)}`
+}
+
+function mapsUrl(direccion) {
+  const query = encodeURIComponent(`${direccion}, Maracaibo, Venezuela`)
+  return `https://www.google.com/maps/search/?api=1&query=${query}`
 }
 
 function InfoCard({ icon: Icon, label, value, color }) {
@@ -47,25 +55,41 @@ export default function PaquetesAdmin() {
   const [precio,   setPrecio]   = useState('')
   const [fechaEst, setFechaEst] = useState('')
   const [monto,    setMonto]    = useState('')
+  const [conductorSel, setConductorSel] = useState('')
+  const [receptor, setReceptor] = useState('')
+  const [metodoPago, setMetodoPago] = useState('Efectivo')
+  const [montoCobrado, setMontoCobrado] = useState('')
   const [toast,    setToast]    = useState({ show: false, msg: '', type: 'success' })
 
   const { data: paquetes = [], isLoading } = usePaquetesAdmin(filtro)
   const { data: tarifas  = [] }            = useTarifas()
   const { mutateAsync: tarifar,   isPending: tarifando   } = useTarifar()
   const { mutateAsync: despachar, isPending: despachando } = useDespachar()
+  const { mutateAsync: marcarEntregado, isPending: entregando } = useMarcarEntregado()
+  const { data: conductores = [] } = useConductores()
+  const { user } = useAuthStore()
 
-  useEffect(() => {
-    if (tarificarParam && paquetes.length > 0) {
-      const p = paquetes.find(x => x.id === tarificarParam)
-      if (p) openModal(p)
+const [modalAbiertoAuto, setModalAbiertoAuto] = useState(false)
+
+useEffect(() => {
+  if (tarificarParam && paquetes.length > 0 && !modalAbiertoAuto) {
+    const p = paquetes.find(x => x.id === tarificarParam)
+    if (p) {
+      openModal(p)
+      setModalAbiertoAuto(true)
     }
-  }, [tarificarParam, paquetes])
+  }
+}, [tarificarParam, paquetes, modalAbiertoAuto])
 
   const openModal = (p) => {
     const sugerido = getPrecioSugerido(tarifas, p.tamanio)
     setPrecio(sugerido?.toString() ?? '')
     setFechaEst('')
     setMonto('')
+    setConductorSel(p.conductor_id ?? '')
+    setReceptor('')
+    setMetodoPago('Efectivo')
+    setMontoCobrado(p.precio_final?.toString() ?? '')
     setModal(p)
   }
 
@@ -84,6 +108,7 @@ export default function PaquetesAdmin() {
         precio_sugerido: sugerido,
         precio_final:    parseFloat(precio),
         fecha_estimada:  fechaEst || null,
+        conductor_id:    conductorSel || user.id,   // sin selección → admin es el conductor
         anteriorEstado:  modal.estado,
       })
       setToast({ show: true, msg: '¡Precio asignado!', type: 'success' })
@@ -98,13 +123,30 @@ export default function PaquetesAdmin() {
     try {
       await despachar({
         id:             modal.id,
-        conductor_id:   null,
+        conductor_id:   conductorSel || null,
         monto_traslado: parseFloat(monto) || 0,
       })
       setToast({ show: true, msg: '¡Paquete despachado!', type: 'success' })
       setModal(null)
     } catch {
       setToast({ show: true, msg: 'Error al despachar', type: 'error' })
+    }
+  }
+
+  const handleMarcarEntregado = async () => {
+    if (!modal || !receptor.trim()) return
+    try {
+      await marcarEntregado({
+        id:              modal.id,
+        nombre_receptor: receptor.trim(),
+        metodo_pago:     metodoPago,
+        monto_cobrado:   parseFloat(montoCobrado) || null,
+        anteriorEstado:  modal.estado,
+      })
+      setToast({ show: true, msg: '¡Paquete entregado! ✓', type: 'success' })
+      setModal(null)
+    } catch {
+      setToast({ show: true, msg: 'Error al marcar entregado', type: 'error' })
     }
   }
 
@@ -219,19 +261,28 @@ export default function PaquetesAdmin() {
               </a>
             )}
 
-            {/* Dirección de entrega */}
+            {/* Dirección de entrega + botón de mapa */}
             {clienteDireccion && (
-              <div className="flex items-start gap-3 bg-white rounded-xl px-4 py-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center
-                  flex-shrink-0" style={{ background: '#FEF3C7' }}>
-                  <MapPin size={15} style={{ color: '#B45309' }} />
+              <div className="bg-white rounded-xl overflow-hidden">
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center
+                    flex-shrink-0" style={{ background: '#FEF3C7' }}>
+                    <MapPin size={15} style={{ color: '#B45309' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-400 mb-0.5">Dirección de entrega</p>
+                    <p className="text-sm font-medium text-slate-800 break-words">
+                      {clienteDireccion}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-400 mb-0.5">Dirección de entrega</p>
-                  <p className="text-sm font-medium text-slate-800 break-words">
-                    {clienteDireccion}
-                  </p>
-                </div>
+                <a href={mapsUrl(clienteDireccion)}
+                  target="_blank" rel="noreferrer"
+                  className="flex items-center justify-center gap-2 py-3
+                    border-t border-slate-100 text-sm font-semibold active:scale-95 transition"
+                  style={{ color: '#0D2B5E' }}>
+                  <Navigation size={16} /> Ver en el mapa
+                </a>
               </div>
             )}
 
@@ -316,6 +367,22 @@ export default function PaquetesAdmin() {
                     onChange={e => setFechaEst(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200
                       text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+
+                <div className="bg-white rounded-xl p-4">
+                  <p className="text-xs text-slate-400 mb-1">Asignar conductor</p>
+                  <select value={conductorSel}
+                    onChange={e => setConductorSel(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200
+                      text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Yo mismo (Administración)</option>
+                    {conductores.filter(c => c.id !== user.id).map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Si no eliges a nadie, el paquete queda asignado a ti
+                  </p>
                 </div>
 
                 <button onClick={handleTarifar}
@@ -439,6 +506,62 @@ export default function PaquetesAdmin() {
                     <p className="text-xs" style={{ color: '#1B7A3E' }}>Recibido por</p>
                     <p className="text-sm font-semibold" style={{ color: '#1B7A3E' }}>
                       {modal.nombre_receptor}
+                    </p>
+                  </div>
+                )}
+
+                {/* Admin puede marcar entregado directamente */}
+                {['EN_TRANSITO','EN_REPARTO'].includes(modal.estado) && (
+                  <div className="pt-2 space-y-3">
+                    <p className="text-xs font-semibold text-slate-400 tracking-wider">
+                      MARCAR COMO ENTREGADO
+                    </p>
+                    <div className="bg-white rounded-xl p-4">
+                      <p className="text-xs text-slate-400 mb-1">¿Quién recibió? *</p>
+                      <input type="text" value={receptor}
+                        onChange={e => setReceptor(e.target.value)}
+                        placeholder="Nombre de quien recibe"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200
+                          text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="bg-white rounded-xl p-4">
+                      <p className="text-xs text-slate-400 mb-2">Método de pago</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {METODOS_PAGO.map(m => (
+                          <button key={m} onClick={() => setMetodoPago(m)}
+                            className={`py-2.5 rounded-xl text-xs font-semibold border-2
+                              transition active:scale-95
+                              ${metodoPago === m
+                                ? 'text-white'
+                                : 'border-slate-200 text-slate-600 bg-white'}`}
+                            style={metodoPago === m
+                              ? { background: '#1565C0', borderColor: '#1565C0' }
+                              : {}}>
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl p-4">
+                      <p className="text-xs text-slate-400 mb-1">Monto cobrado (USD)</p>
+                      <input type="number" inputMode="decimal" value={montoCobrado}
+                        onChange={e => setMontoCobrado(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200
+                          text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <button onClick={handleMarcarEntregado}
+                      disabled={!receptor.trim() || entregando}
+                      className="w-full py-4 rounded-2xl text-white font-semibold text-sm
+                        flex items-center justify-center gap-2 disabled:opacity-50
+                        active:scale-95 transition"
+                      style={{ background: '#1B7A3E' }}>
+                      {entregando
+                        ? <Loader2 size={18} className="animate-spin" />
+                        : null}
+                      Confirmar entrega
+                    </button>
+                    <p className="text-xs text-center text-slate-400">
+                      La fecha de entrega se registra automáticamente
                     </p>
                   </div>
                 )}

@@ -17,12 +17,16 @@ import Perfil          from './pages/cliente/Perfil'
 // Bodeguero
 import Recepcion       from './pages/bodeguero/Recepcion'
 import Registros       from './pages/bodeguero/Registros'
+import ReporteBodeguero from './pages/bodeguero/ReporteBodeguero'
+
+// Conductor
+import Entregas        from './pages/conductor/Entregas'
+import ReporteConductor from './pages/conductor/ReporteConductor'
 
 // Admin
 import Dashboard       from './pages/admin/Dashboard'
 import PaquetesAdmin   from './pages/admin/PaquetesAdmin'
 import Tarifas         from './pages/admin/Tarifas'
-import Auditoria       from './pages/admin/Auditoria'
 import Usuarios        from './pages/admin/Usuarios'
 
 // ── Guard ─────────────────────────────────────────────────────────────────────
@@ -39,6 +43,8 @@ function PrivateRoute({ children, roles }) {
         return <Navigate to="/admin/dashboard" replace />
       if (userRoles.includes('bodeguero'))
         return <Navigate to="/bodeguero/recepcion" replace />
+      if (userRoles.includes('conductor'))
+        return <Navigate to="/conductor/entregas" replace />
       return <Navigate to="/cliente/casillero" replace />
     }
   }
@@ -84,8 +90,19 @@ export default function App() {
         <Route path="/bodeguero/registros" element={
           <PrivateRoute roles={['bodeguero','admin']}><Registros /></PrivateRoute>
         }/>
+        <Route path="/bodeguero/reporte" element={
+          <PrivateRoute roles={['bodeguero','admin']}><ReporteBodeguero /></PrivateRoute>
+        }/>
 
-        {/* Admin */}
+        {/* Conductor */}
+        <Route path="/conductor/entregas" element={
+          <PrivateRoute roles={['conductor','admin']}><Entregas /></PrivateRoute>
+        }/>
+        <Route path="/conductor/reporte" element={
+          <PrivateRoute roles={['conductor','admin']}><ReporteConductor /></PrivateRoute>
+        }/>
+
+        {/* Admin (Auditoría oculta temporalmente) */}
         <Route path="/admin/dashboard" element={
           <PrivateRoute roles={['admin']}><Dashboard /></PrivateRoute>
         }/>
@@ -94,9 +111,6 @@ export default function App() {
         }/>
         <Route path="/admin/tarifas" element={
           <PrivateRoute roles={['admin']}><Tarifas /></PrivateRoute>
-        }/>
-        <Route path="/admin/auditoria" element={
-          <PrivateRoute roles={['admin']}><Auditoria /></PrivateRoute>
         }/>
         <Route path="/admin/usuarios" element={
           <PrivateRoute roles={['admin']}><Usuarios /></PrivateRoute>

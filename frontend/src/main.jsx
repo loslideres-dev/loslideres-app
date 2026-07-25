@@ -20,3 +20,14 @@ createRoot(document.getElementById('root')).render(
     </QueryClientProvider>
   </StrictMode>,
 )
+
+// Quitar el splash con un fade suave una vez que React montó
+requestAnimationFrame(() => {
+  setTimeout(() => {
+    const splash = document.getElementById('splash')
+    if (splash) {
+      splash.style.opacity = '0'
+      setTimeout(() => splash.remove(), 400)
+    }
+  }, 600)
+})

@@ -1,5 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, registrarAuditoria } from '../lib/supabase'
+import { crearNotificacion, notificarAdmins } from '../lib/notificar'
+
+// Helper: normaliza filas de la vista paquetes_con_cliente
+const conPerfil = (data) => data.map(p => ({
+  ...p,
+  perfiles: {
+    nombre:           p.cliente_nombre,
+    codigo_casillero: p.cliente_codigo,
+    telefono:         p.cliente_telefono,
+  },
+}))
 
 // ── Cliente: sus paquetes ─────────────────────────────────────────────────────
 export function usePaquetes() {
@@ -47,14 +58,7 @@ export function usePaquetesHoy(bodegueroId) {
         .gte('fecha_recepcion', `${hoy}T00:00:00`)
         .order('fecha_recepcion', { ascending: false })
       if (error) throw error
-      return data.map(p => ({
-        ...p,
-        perfiles: {
-          nombre:           p.cliente_nombre,
-          codigo_casillero: p.cliente_codigo,
-          telefono:         p.cliente_telefono,
-        }
-      }))
+      return conPerfil(data)
     },
     enabled: !!bodegueroId,
     staleTime: 10_000,
@@ -73,16 +77,29 @@ export function usePaquetesAdmin(estado = null) {
       if (estado) q = q.eq('estado', estado)
       const { data, error } = await q
       if (error) throw error
-      return data.map(p => ({
-        ...p,
-        perfiles: {
-          nombre:           p.cliente_nombre,
-          codigo_casillero: p.cliente_codigo,
-          telefono:         p.cliente_telefono,
-        }
-      }))
+      return conPerfil(data)
     },
     staleTime: 15_000,
+    refetchInterval: 30_000,
+  })
+}
+
+// ── Conductor: entregas asignadas (EN_TRANSITO y EN_REPARTO) ──────────────────
+export function useEntregasConductor(conductorId) {
+  return useQuery({
+    queryKey: ['entregas-conductor', conductorId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('paquetes_con_cliente')
+        .select('*')
+        .eq('conductor_id', conductorId)
+        .in('estado', ['EN_TRANSITO', 'EN_REPARTO'])
+        .order('fecha_recepcion', { ascending: true })
+      if (error) throw error
+      return conPerfil(data)
+    },
+    enabled: !!conductorId,
+    staleTime: 10_000,
     refetchInterval: 30_000,
   })
 }
@@ -94,7 +111,7 @@ export function useDashboardStats() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('paquetes')
-        .select('estado, fecha_recepcion')
+        .select('estado, fecha_entrega')
       if (error) throw error
       const hoy = new Date().toDateString()
       return {
@@ -102,8 +119,8 @@ export function useDashboardStats() {
         en_transito:       data.filter(p => p.estado === 'EN_TRANSITO').length,
         en_reparto:        data.filter(p => p.estado === 'EN_REPARTO').length,
         entregados_hoy:    data.filter(p =>
-          p.estado === 'ENTREGADO' &&
-          new Date(p.fecha_recepcion).toDateString() === hoy).length,
+          p.estado === 'ENTREGADO' && p.fecha_entrega &&
+          new Date(p.fecha_entrega).toDateString() === hoy).length,
         total: data.length,
       }
     },
@@ -136,6 +153,20 @@ export function useRegistrarPaquete() {
         entidadId: data.id,
         valorNuevo: { codigo, cliente_id: clienteId, tamanio: resto.tamanio },
       })
+      // Notificar al cliente y a los admins
+      await crearNotificacion({
+        usuarioId: clienteId,
+        tipo:      'paquete_recibido',
+        titulo:    'Tu paquete llegó a la bodega',
+        mensaje:   `El paquete ${codigo} fue recibido en Maicao. Pronto tendrá precio asignado.`,
+        paqueteId: data.id,
+      })
+      await notificarAdmins({
+        tipo:    'paquete_recibido',
+        titulo:  'Nuevo paquete en bodega',
+        mensaje: `Se registró el paquete ${codigo}. Pendiente por tarifar.`,
+        paqueteId: data.id,
+      })
       return data
     },
     onSuccess: () => {
@@ -146,13 +177,13 @@ export function useRegistrarPaquete() {
   })
 }
 
-// ── Tarifar paquete (admin) ───────────────────────────────────────────────────
+// ── Tarifar paquete (admin) — asigna conductor (o el admin por defecto) ──────
 export function useTarifar() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({
       id, precio_sugerido, precio_final, fecha_estimada,
-      conductor_id, monto_traslado, anteriorEstado,
+      conductor_id, anteriorEstado,
     }) => {
       const { data, error } = await supabase
         .from('paquetes')
@@ -161,7 +192,6 @@ export function useTarifar() {
           precio_final,
           fecha_estimada,
           conductor_id,
-          monto_traslado,
           estado: 'TARIFADO',
         })
         .eq('id', id)
@@ -176,28 +206,49 @@ export function useTarifar() {
         valorNuevo: {
           precio_sugerido,
           precio_final,
-          diferencia:    precio_final - precio_sugerido,
+          diferencia: precio_final - precio_sugerido,
           conductor_id,
-          monto_traslado,
         },
       })
+      if (data?.cliente_id) {
+        await crearNotificacion({
+          usuarioId: data.cliente_id,
+          tipo:      'cambio_estado',
+          titulo:    'Tu paquete tiene precio',
+          mensaje:   `El paquete ${data.codigo} fue tarifado en $${precio_final} USD.`,
+          paqueteId: id,
+        })
+      }
+      // Notificar al conductor asignado
+      if (conductor_id) {
+        await crearNotificacion({
+          usuarioId: conductor_id,
+          tipo:      'paquete_asignado',
+          titulo:    'Nuevo paquete asignado',
+          mensaje:   `Se te asignó el paquete ${data.codigo} para entrega.`,
+          paqueteId: id,
+        })
+      }
       return data
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      qc.invalidateQueries({ queryKey: ['entregas-conductor'] })
     },
   })
 }
 
-// ── Despachar paquete (admin) ─────────────────────────────────────────────────
+// ── Despachar paquete (admin) — pasa a EN_TRANSITO ────────────────────────────
 export function useDespachar() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, conductor_id, monto_traslado }) => {
+      const cambios = { estado: 'EN_TRANSITO', monto_traslado }
+      if (conductor_id) cambios.conductor_id = conductor_id
       const { data, error } = await supabase
         .from('paquetes')
-        .update({ estado: 'EN_TRANSITO', conductor_id, monto_traslado })
+        .update(cambios)
         .eq('id', id)
         .select()
         .single()
@@ -208,11 +259,109 @@ export function useDespachar() {
         entidadId: id,
         valorNuevo: { estado: 'EN_TRANSITO', monto_traslado },
       })
+      if (data?.cliente_id) {
+        await crearNotificacion({
+          usuarioId: data.cliente_id,
+          tipo:      'cambio_estado',
+          titulo:    'Tu paquete está en camino',
+          mensaje:   `El paquete ${data.codigo} va en camino a Maracaibo.`,
+          paqueteId: id,
+        })
+      }
       return data
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      qc.invalidateQueries({ queryKey: ['entregas-conductor'] })
+    },
+  })
+}
+
+// ── Iniciar reparto (conductor) — EN_TRANSITO → EN_REPARTO ────────────────────
+export function useIniciarReparto() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id }) => {
+      const { data, error } = await supabase
+        .from('paquetes')
+        .update({ estado: 'EN_REPARTO' })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      await registrarAuditoria({
+        evento:    'paquete_en_reparto',
+        entidad:   'paquetes',
+        entidadId: id,
+        valorNuevo: { estado: 'EN_REPARTO' },
+      })
+      if (data?.cliente_id) {
+        await crearNotificacion({
+          usuarioId: data.cliente_id,
+          tipo:      'cambio_estado',
+          titulo:    'Tu paquete está en reparto',
+          mensaje:   `El paquete ${data.codigo} está saliendo a tu dirección. ¡Prepárate!`,
+          paqueteId: id,
+        })
+      }
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['entregas-conductor'] })
+      qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+    },
+  })
+}
+
+// ── Marcar entregado (conductor o admin) — fecha automática ───────────────────
+export function useMarcarEntregado() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, nombre_receptor, metodo_pago, monto_cobrado, anteriorEstado }) => {
+      const { data, error } = await supabase
+        .from('paquetes')
+        .update({
+          estado:          'ENTREGADO',
+          fecha_entrega:   new Date().toISOString(),   // fecha automática
+          nombre_receptor,
+          metodo_pago,
+          monto_cobrado,
+        })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      await registrarAuditoria({
+        evento:    'paquete_entregado',
+        entidad:   'paquetes',
+        entidadId: id,
+        valorAnterior: { estado: anteriorEstado },
+        valorNuevo: { estado: 'ENTREGADO', nombre_receptor, metodo_pago, monto_cobrado },
+      })
+      if (data?.cliente_id) {
+        await crearNotificacion({
+          usuarioId: data.cliente_id,
+          tipo:      'paquete_entregado',
+          titulo:    '¡Paquete entregado!',
+          mensaje:   `El paquete ${data.codigo} fue entregado a ${nombre_receptor}. ¡Gracias!`,
+          paqueteId: id,
+        })
+      }
+      await notificarAdmins({
+        tipo:    'paquete_entregado',
+        titulo:  'Paquete entregado',
+        mensaje: `El paquete ${data.codigo} fue entregado a ${nombre_receptor}.`,
+        paqueteId: id,
+      })
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['entregas-conductor'] })
+      qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      qc.invalidateQueries({ queryKey: ['paquetes'] })
     },
   })
 }

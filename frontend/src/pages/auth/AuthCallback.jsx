@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
-import { ROLE_REDIRECT } from '../../constants/roles'
 import { Loader2 } from 'lucide-react'
 
 export default function AuthCallback() {
@@ -13,27 +12,32 @@ export default function AuthCallback() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { navigate('/login', { replace: true }); return }
 
-      const user = session.user
+      const user  = session.user
       setAuth(user, session)
 
       const roles = user?.user_metadata?.roles ?? ['cliente']
 
-      // Solo para clientes verificar si necesitan onboarding
-      if (roles.includes('cliente') && !roles.includes('admin')) {
-        const { data: perfil } = await supabase
-          .from('perfiles')
-          .select('telefono, direccion_entrega, codigo_casillero')
-          .eq('id', user.id)
-          .single()
-
-        const necesitaOnboarding = !perfil?.telefono || !perfil?.direccion_entrega
-        if (necesitaOnboarding) {
-          navigate('/onboarding', { replace: true }); return
-        }
+      // Redirección por prioridad de rol
+      if (roles.includes('admin')) {
+        navigate('/admin/dashboard', { replace: true }); return
+      }
+      if (roles.includes('bodeguero')) {
+        navigate('/bodeguero/recepcion', { replace: true }); return
+      }
+      if (roles.includes('conductor')) {
+        navigate('/conductor/entregas', { replace: true }); return
       }
 
-      const base = ROLE_REDIRECT[roles[0]] ?? '/cliente/casillero'
-      navigate(base, { replace: true })
+      // Cliente puro: verificar onboarding
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('telefono, direccion_entrega')
+        .eq('id', user.id)
+        .single()
+
+      const necesitaOnboarding = !perfil?.telefono || !perfil?.direccion_entrega
+      navigate(necesitaOnboarding ? '/onboarding' : '/cliente/casillero',
+        { replace: true })
     })
   }, [])
 

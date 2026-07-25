@@ -1,14 +1,67 @@
 <!doctype html>
 <html lang="es">
   <head>
-    <meta name="color-scheme" content="light only" />
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/src/assets/logo-mini.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="color-scheme" content="light only" />
     <meta name="theme-color" content="#0D2B5E" />
     <title>Los Líderes Encomiendas</title>
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #0D2B5E;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        transition: opacity 0.4s ease;
+      }
+      #splash .logo-card {
+        background: #FFFFFF;
+        border-radius: 28px;
+        padding: 24px 28px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+        animation: splash-pop 0.5s ease;
+      }
+      #splash img { width: 220px; height: auto; display: block; }
+      #splash p {
+        color: #94a3b8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 13px;
+        margin: 0;
+      }
+      #splash .dot-loader {
+        display: flex; gap: 6px;
+      }
+      #splash .dot-loader span {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #4FC3F7;
+        animation: splash-bounce 1.2s infinite ease-in-out;
+      }
+      #splash .dot-loader span:nth-child(2) { animation-delay: 0.15s }
+      #splash .dot-loader span:nth-child(3) { animation-delay: 0.3s }
+      @keyframes splash-bounce {
+        0%, 80%, 100% { transform: scale(0.6); opacity: 0.5 }
+        40% { transform: scale(1); opacity: 1 }
+      }
+      @keyframes splash-pop {
+        from { transform: scale(0.9); opacity: 0 }
+        to   { transform: scale(1);   opacity: 1 }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash">
+      <div class="logo-card">
+        <img src="/logo-full.png" alt="Los Líderes Encomiendas" />
+      </div>
+      <p>De Colombia tu puerta en Maracaibo</p>
+      <div class="dot-loader"><span></span><span></span><span></span></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

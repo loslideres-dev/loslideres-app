@@ -1,12 +1,14 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ScanLine, List, LogOut } from 'lucide-react'
+import { ScanLine, List, BarChart3, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
+import NotifBell from '../ui/NotifBell'
 import logoMini from '../../assets/logo-mini.png'
 
 const TABS = [
-  { label: 'Registrar',     icon: ScanLine, path: '/bodeguero/recepcion' },
-  { label: 'Mis registros', icon: List,     path: '/bodeguero/registros' },
+  { label: 'Registrar',     icon: ScanLine,   path: '/bodeguero/recepcion' },
+  { label: 'Mis registros', icon: List,       path: '/bodeguero/registros' },
+  { label: 'Reporte',       icon: BarChart3,  path: '/bodeguero/reporte'   },
 ]
 
 export default function BodegueroLayout({ children }) {
@@ -36,10 +38,13 @@ export default function BodegueroLayout({ children }) {
             <h1 className="text-white text-lg font-bold">{nombre}</h1>
           </div>
         </div>
-        <button onClick={handleLogout}
-          className="text-slate-400 hover:text-white transition p-2 active:scale-95">
-          <LogOut size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          <NotifBell />
+          <button onClick={handleLogout}
+            className="text-slate-400 hover:text-white transition p-2 active:scale-95">
+            <LogOut size={20} />
+          </button>
+        </div>
       </div>
 
       {children}

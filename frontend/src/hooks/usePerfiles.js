@@ -22,7 +22,7 @@ export function useBuscarCliente(query) {
   })
 }
 
-// Mi perfil (cliente)
+// Mi perfil
 export function useMiPerfil(userId) {
   return useQuery({
     queryKey: ['perfil', userId],
@@ -72,5 +72,23 @@ export function useUsuarios(rol = null) {
       return data
     },
     staleTime: 30_000,
+  })
+}
+
+// Conductores disponibles (rol conductor o admin) para asignar entregas
+export function useConductores() {
+  return useQuery({
+    queryKey: ['conductores'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('perfiles')
+        .select('id, nombre, roles')
+        .or('roles.cs.{conductor},roles.cs.{admin}')
+        .eq('activo', true)
+        .order('nombre')
+      if (error) throw error
+      return data
+    },
+    staleTime: 60_000,
   })
 }

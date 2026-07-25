@@ -1,17 +1,18 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Package, DollarSign, Users, Shield, LogOut,
+  LayoutDashboard, Package, DollarSign, Users, Truck, LogOut,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
 import logoMini from '../../assets/logo-mini.png'
+import NotifBell from '../ui/NotifBell'
 
 const TABS = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-  { label: 'Paquetes',  icon: Package,         path: '/admin/paquetes'  },
-  { label: 'Tarifas',   icon: DollarSign,      path: '/admin/tarifas'   },
-  { label: 'Usuarios',  icon: Users,           path: '/admin/usuarios'  },
-  { label: 'Auditoría', icon: Shield,          path: '/admin/auditoria' },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard'   },
+  { label: 'Paquetes',  icon: Package,         path: '/admin/paquetes'    },
+  { label: 'Entregas',  icon: Truck,           path: '/conductor/entregas' },
+  { label: 'Tarifas',   icon: DollarSign,      path: '/admin/tarifas'     },
+  { label: 'Usuarios',  icon: Users,           path: '/admin/usuarios'    },
 ]
 
 export default function AdminLayout({ children, title }) {
@@ -34,14 +35,14 @@ export default function AdminLayout({ children, title }) {
       <div className="px-5 pt-12 pb-5" style={{ background: '#0D2B5E' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logoMini} alt="Los Líderes"
-              className="w-10 h-10 rounded-xl" />
+            <img src={logoMini} alt="Los Líderes" className="w-10 h-10 rounded-xl" />
             <div>
               <p className="text-sky-300 text-xs font-medium">ADMINISTRACIÓN</p>
               <h1 className="text-white text-xl font-bold">{title ?? 'Dashboard'}</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <NotifBell />
             <div className="w-8 h-8 rounded-full flex items-center justify-center
               text-white text-xs font-bold" style={{ background: '#1565C0' }}>
               {nombre.slice(0, 2).toUpperCase()}
