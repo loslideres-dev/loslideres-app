@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+/* Forzar modo claro siempre, ignorando el modo oscuro del sistema */
+:root {
+  color-scheme: only light;
+}
+
+html {
+  background-color: #F4F6FA;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Evita que el navegador invierta colores en modo oscuro */
+* {
+  forced-color-adjust: none;
+}
