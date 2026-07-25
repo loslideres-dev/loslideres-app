@@ -1,6 +1,13 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.3.7](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.6...v0.3.7) (2026-07-25)
+
+
+### ✨ Nuevas funcionalidades
+
+* reporte del negocio para admin con metricas financieras, operativas, rankings y graficos ([5da3433](https://github.com/loslideres-dev/loslideres-app/commit/5da34339dbede19f2108e64a41041973f7992d73))
+
 ### [0.3.6](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.5...v0.3.6) (2026-07-25)
 
 
