@@ -9,11 +9,11 @@ import Modal from '../../components/ui/Modal'
 import Toast from '../../components/ui/Toast'
 
 const FILTROS = [
+  { label: 'Todos',      value: null           },
   { label: 'Pendientes', value: 'RECIBIDO'    },
   { label: 'Tarifados',  value: 'TARIFADO'    },
   { label: 'Tránsito',   value: 'EN_TRANSITO' },
   { label: 'Reparto',    value: 'EN_REPARTO'  },
-  { label: 'Todos',      value: null           },
 ]
 
 function whatsappUrl(telefono, mensaje) {
@@ -42,7 +42,7 @@ export default function PaquetesAdmin() {
   const estadoParam    = params.get('estado')
   const tarificarParam = params.get('tarificar')
 
-  const [filtro,   setFiltro]   = useState(estadoParam ?? 'RECIBIDO')
+  const [filtro,   setFiltro]   = useState(estadoParam ?? null)
   const [modal,    setModal]    = useState(null)
   const [precio,   setPrecio]   = useState('')
   const [fechaEst, setFechaEst] = useState('')

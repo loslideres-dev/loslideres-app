@@ -27,16 +27,14 @@ export default function Modal({ open, onClose, title, children }) {
         <h3 className="text-base font-semibold text-slate-800 truncate">{title}</h3>
       </div>
 
-      {/* Contenido scrolleable — deja espacio para el botón de abajo */}
-      <div className="flex-1 overflow-y-auto px-5 py-5" style={{ paddingBottom: 100 }}>
+      {/* Contenido scrolleable — el botón de cerrar va al final, dentro del scroll */}
+      <div className="flex-1 overflow-y-auto px-5 py-5">
         {children}
-      </div>
 
-      {/* Botón cerrar grande — por encima del navbar */}
-      <div className="absolute bottom-20 left-0 right-0 px-5">
+        {/* Botón cerrar al final del contenido (no flotante) */}
         <button onClick={onClose}
-          className="w-full py-4 rounded-2xl font-semibold text-sm
-            flex items-center justify-center gap-2 active:scale-95 transition shadow-lg"
+          className="w-full py-4 rounded-2xl font-semibold text-sm mt-6
+            flex items-center justify-center gap-2 active:scale-95 transition"
           style={{ background: '#DC2626', color: 'white' }}>
           <X size={18} />
           Cerrar
