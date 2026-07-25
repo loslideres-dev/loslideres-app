@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/src/assets/logo-mini.png" />
+    <link rel="preload" as="image" href="/logo-full.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="color-scheme" content="light only" />
     <meta name="theme-color" content="#FFFFFF" />
@@ -20,11 +21,17 @@
         gap: 24px;
         transition: opacity 0.4s ease;
       }
+      /* El logo empieza invisible y aparece SOLO cuando termina de cargar */
       #splash img {
         width: 260px;
         height: auto;
         display: block;
-        animation: splash-pop 0.5s ease;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      #splash img.loaded {
+        opacity: 1;
+        animation: splash-pop 0.4s ease;
       }
       #splash p {
         color: #64748b;
@@ -47,14 +54,15 @@
         40% { transform: scale(1); opacity: 1 }
       }
       @keyframes splash-pop {
-        from { transform: scale(0.92); opacity: 0 }
-        to   { transform: scale(1);    opacity: 1 }
+        from { transform: scale(0.92) }
+        to   { transform: scale(1) }
       }
     </style>
   </head>
   <body>
     <div id="splash">
-      <img src="/logo-full.png" alt="Los Líderes Encomiendas" />
+      <img src="/logo-full.png" alt="Los Líderes Encomiendas"
+        onload="this.classList.add('loaded')" />
       <p>De Maicao a tu puerta en Maracaibo</p>
       <div class="dot-loader"><span></span><span></span><span></span></div>
     </div>
