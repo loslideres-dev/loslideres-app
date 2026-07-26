@@ -7,12 +7,9 @@ import './landing.css';
    con valores por defecto para desarrollo.
    ============================================================ */
 const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
-const APP_URL       = env.VITE_APP_URL       || 'https://loslideres-app-production.up.railway.app';
-const TRACK_PATH    = env.VITE_TRACK_PATH    || '/rastreo';   // ruta de rastreo en tu PWA
-const LOGIN_PATH    = env.VITE_LOGIN_PATH    || '/login';
-const REGISTER_PATH = env.VITE_REGISTER_PATH || '/registro';
-const WHATSAPP      = env.VITE_WHATSAPP      || '584246282123'; // código país + número, sin +
-const EMAIL         = env.VITE_EMAIL         || 'loslideresencomiendas@gmail.com';
+const APP_URL  = env.VITE_APP_URL  || 'https://loslideres-app-production.up.railway.app';
+const WHATSAPP = env.VITE_WHATSAPP || '584246282123'; // código país + número, sin +
+const EMAIL    = env.VITE_EMAIL    || 'loslideresencomiendas@gmail.com';
 
 const waLink = (msg) =>
   `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
@@ -52,10 +49,13 @@ export default function Landing() {
   const rootRef = useReveal();
   const [guia, setGuia] = useState('');
 
+  // Rastreo temporal por WhatsApp (hasta conectar Supabase)
   const rastrear = () => {
     const code = guia.trim();
-    if (!code) { window.location.href = `${APP_URL}${TRACK_PATH}`; return; }
-    window.location.href = `${APP_URL}${TRACK_PATH}?guia=${encodeURIComponent(code)}`;
+    const msg = code
+      ? `Hola, quiero rastrear mi paquete. Mi número de guía es: ${code}`
+      : 'Hola, quiero rastrear mi paquete.';
+    window.open(waLink(msg), '_blank', 'noopener');
   };
 
   return (
@@ -79,7 +79,7 @@ export default function Landing() {
             <a href="#contacto">Contacto</a>
           </nav>
           <div className="ll-header__cta">
-            <a className="ll-login" href={`${APP_URL}${LOGIN_PATH}`}>Ingresar</a>
+            <a className="ll-login" href={APP_URL}>Ingresar</a>
             <a className="ll-btn ll-btn--primary" href={waLink('Hola, quiero cotizar un envío a Venezuela.')}>Cotizar</a>
           </div>
         </div>
@@ -126,7 +126,7 @@ export default function Landing() {
       {/* ---------------- CÓMO FUNCIONA ---------------- */}
       <section className="ll-section" id="como">
         <div className="ll-wrap">
-          <div className="ll-section__head reveal">            
+          <div className="ll-section__head reveal">
             <h2>Cómo funciona</h2>
             <p>Tres pasos, sin trámites complicados. Tú envías, nosotros nos encargamos del resto.</p>
           </div>
@@ -238,7 +238,7 @@ export default function Landing() {
           <h2>¿Listo para enviar a Venezuela?</h2>
           <p>Crea tu cuenta y controla todos tus envíos desde un solo lugar.</p>
           <div className="ll-cta__actions">
-            <a className="ll-btn ll-btn--sky" href={`${APP_URL}${REGISTER_PATH}`}>Crear cuenta</a>
+            <a className="ll-btn ll-btn--sky" href={APP_URL}>Crear cuenta</a>
             <a className="ll-btn ll-btn--ghost" href={waLink('Hola, quiero información sobre los envíos a Venezuela.')}>Escríbenos por WhatsApp</a>
           </div>
         </div>
@@ -279,8 +279,8 @@ export default function Landing() {
               <ul>
                 <li><a href="#como">Cómo funciona</a></li>
                 <li><a href="#rastreo">Rastrear envío</a></li>
-                <li><a href={`${APP_URL}${LOGIN_PATH}`}>Ingresar</a></li>
-                <li><a href={`${APP_URL}${REGISTER_PATH}`}>Crear cuenta</a></li>
+                <li><a href={APP_URL}>Ingresar</a></li>
+                <li><a href={APP_URL}>Crear cuenta</a></li>
               </ul>
             </div>
 
