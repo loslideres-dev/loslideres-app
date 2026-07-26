@@ -244,6 +244,7 @@
   content: ''; position: absolute; right: -80px; top: 50%; transform: translateY(-50%) rotate(-14deg);
   width: 320px; height: 200px; border: 26px solid var(--sky); border-radius: 50%;
   border-left-color: transparent; border-bottom-color: transparent; opacity: .18;
+  pointer-events: none;
 }
 .ll-cta h2 { font-family: var(--display); font-weight: 800; font-size: clamp(28px,3.6vw,40px); margin: 0 0 12px; letter-spacing: -.02em; position: relative; }
 .ll-cta p { font-size: 17px; color: #b9cdea; margin: 0 0 26px; position: relative; }
