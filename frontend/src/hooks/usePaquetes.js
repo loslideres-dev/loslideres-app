@@ -135,6 +135,8 @@ export function useRegistrarPaquete() {
   return useMutation({
     mutationFn: async ({ clienteId, bodegueroId, foto_url, ...resto }) => {
       const codigo = `ENC-${Date.now().toString(36).toUpperCase()}`
+      // Código que ve el cliente: el tracking del courier si lo trae, si no el interno
+      const codigoCliente = resto.tracking_externo?.trim() || codigo
       const { data, error } = await supabase
         .from('paquetes')
         .insert({
@@ -151,14 +153,14 @@ export function useRegistrarPaquete() {
         evento:    'paquete_registrado',
         entidad:   'paquetes',
         entidadId: data.id,
-        valorNuevo: { codigo, cliente_id: clienteId, tamanio: resto.tamanio },
+        valorNuevo: { codigo, cliente_id: clienteId, tamanio: resto.tamanio, tracking_externo: resto.tracking_externo },
       })
       // Notificar al cliente y a los admins
       await crearNotificacion({
         usuarioId: clienteId,
         tipo:      'paquete_recibido',
         titulo:    'Tu paquete llegó a la bodega',
-        mensaje:   `El paquete ${codigo} fue recibido en Maicao. Pronto tendrá precio asignado.`,
+        mensaje:   `El paquete ${codigoCliente} fue recibido en Maicao. Pronto tendrá precio asignado.`,
         paqueteId: data.id,
       })
       await notificarAdmins({
@@ -219,7 +221,7 @@ export function useTarifar() {
           usuarioId: data.cliente_id,
           tipo:      'cambio_estado',
           titulo:    'Tu paquete tiene precio',
-          mensaje:   `El paquete ${data.codigo} fue tarifado en $${precio_final} USD.`,
+          mensaje:   `El paquete ${data.tracking_externo || data.codigo} fue tarifado en $${precio_final} USD.`,
           paqueteId: id,
         })
       }
@@ -229,7 +231,7 @@ export function useTarifar() {
           usuarioId: conductor_id,
           tipo:      'paquete_asignado',
           titulo:    'Nuevo paquete asignado',
-          mensaje:   `Se te asignó el paquete ${data.codigo} para entrega.`,
+          mensaje:   `Se te asignó el paquete ${data.tracking_externo || data.codigo} para entrega.`,
           paqueteId: id,
         })
       }
@@ -267,7 +269,7 @@ export function usePonerEnTransito() {
           usuarioId: data.cliente_id,
           tipo:      'cambio_estado',
           titulo:    'Tu paquete está en camino',
-          mensaje:   `El paquete ${data.codigo} va en camino a Maracaibo.`,
+          mensaje:   `El paquete ${data.tracking_externo || data.codigo} va en camino a Maracaibo.`,
           paqueteId: id,
         })
       }
@@ -304,7 +306,7 @@ export function useIniciarReparto() {
           usuarioId: data.cliente_id,
           tipo:      'cambio_estado',
           titulo:    'Tu paquete está en reparto',
-          mensaje:   `El paquete ${data.codigo} está saliendo a tu dirección. ¡Prepárate!`,
+          mensaje:   `El paquete ${data.tracking_externo || data.codigo} está saliendo a tu dirección. ¡Prepárate!`,
           paqueteId: id,
         })
       }
@@ -348,7 +350,7 @@ export function useMarcarEntregado() {
           usuarioId: data.cliente_id,
           tipo:      'paquete_entregado',
           titulo:    '¡Paquete entregado!',
-          mensaje:   `El paquete ${data.codigo} fue entregado a ${nombre_receptor}. ¡Gracias!`,
+          mensaje:   `El paquete ${data.tracking_externo || data.codigo} fue entregado a ${nombre_receptor}. ¡Gracias!`,
           paqueteId: id,
         })
       }
@@ -422,5 +424,28 @@ export function useEliminarPaquete() {
       qc.invalidateQueries({ queryKey: ['paquetes-admin'] })
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
     },
+  })
+}
+
+
+// ── Buscar paquete por código interno (ENC) o tracking externo ────────────────
+// Útil para el admin y la futura página de rastreo público.
+export function useBuscarPaquete(query) {
+  return useQuery({
+    queryKey: ['buscar-paquete', query],
+    queryFn: async () => {
+      if (!query || query.length < 3) return []
+      const q = query.trim()
+      const { data, error } = await supabase
+        .from('paquetes_con_cliente')
+        .select('*')
+        .or(`codigo.ilike.%${q}%,tracking_externo.ilike.%${q}%`)
+        .order('fecha_recepcion', { ascending: false })
+        .limit(20)
+      if (error) throw error
+      return data
+    },
+    enabled: !!query && query.length >= 3,
+    staleTime: 10_000,
   })
 }

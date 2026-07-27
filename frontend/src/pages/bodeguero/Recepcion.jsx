@@ -42,7 +42,7 @@ export default function Recepcion() {
   const galRef = useRef(null)   // input sin capture (galería)
 
   const [form, setForm] = useState({
-    descripcion: '', tienda: '',
+    tracking_externo: '', descripcion: '', tienda: '',
     largo_cm: '', ancho_cm: '', alto_cm: '', peso_kg: '',
     tamanio: '', observaciones: '',
   })
@@ -113,6 +113,7 @@ export default function Recepcion() {
         clienteId:     clienteSel.id,
         bodegueroId:   user.id,
         foto_url:      publicUrl,
+        tracking_externo: form.tracking_externo.trim() || null,
         descripcion:   form.descripcion.trim() || null,
         tienda:        form.tienda.trim() || null,
         largo_cm:      parseFloat(form.largo_cm) || null,
@@ -136,7 +137,7 @@ export default function Recepcion() {
     setStep(1); setQuery(''); setClienteSel(null)
     setTamanioManual(false)
     setForm({
-      descripcion: '', tienda: '',
+      tracking_externo: '', descripcion: '', tienda: '',
       largo_cm: '', ancho_cm: '', alto_cm: '', peso_kg: '',
       tamanio: '', observaciones: '',
     })
@@ -311,6 +312,18 @@ export default function Recepcion() {
 
             {/* ── DATOS ── */}
             <div className="space-y-3 mb-4">
+              <div>
+                <input type="text"
+                  placeholder="Tracking del courier (ej. Amazon, Servientrega)"
+                  value={form.tracking_externo}
+                  autoCapitalize="characters"
+                  onChange={e => setForm(f => ({ ...f, tracking_externo: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white
+                    text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
+                <p className="text-xs text-slate-400 mt-1 ml-1">
+                  Opcional — el código con el que el cliente rastrea su paquete
+                </p>
+              </div>
               <input type="text" placeholder="Descripción (ej. Zapatos Nike)"
                 value={form.descripcion}
                 onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}

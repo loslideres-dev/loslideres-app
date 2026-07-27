@@ -48,7 +48,12 @@ function PaqueteCard({ paquete, onClick }) {
         <div>
           <div className="flex items-start justify-between gap-2 mb-1.5">
             <div className="min-w-0">
-              <p className="text-xs text-slate-400 font-mono">{paquete.codigo}</p>
+              {paquete.tracking_externo
+                ? <p className="text-xs font-mono font-semibold text-slate-700 truncate">
+                    {paquete.tracking_externo}
+                  </p>
+                : <p className="text-xs text-slate-400 font-mono">{paquete.codigo}</p>
+              }
               <p className="text-sm font-semibold text-slate-800 truncate">
                 {[paquete.descripcion, paquete.tienda].filter(Boolean).join(' · ')}
               </p>

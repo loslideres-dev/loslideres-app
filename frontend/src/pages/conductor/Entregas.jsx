@@ -136,7 +136,14 @@ export default function Entregas() {
                 </div>
                 <div className="flex-1 px-4 py-3 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <p className="text-xs font-mono text-slate-400">{p.codigo}</p>
+                    <div className="min-w-0">
+                      {p.tracking_externo && (
+                        <p className="text-xs font-mono font-semibold text-slate-700 truncate">
+                          {p.tracking_externo}
+                        </p>
+                      )}
+                      <p className="text-xs font-mono text-slate-400">{p.codigo}</p>
+                    </div>
                     <EstadoBadge estado={p.estado} />
                   </div>
                   <p className="text-sm font-semibold text-slate-800 truncate">
@@ -150,7 +157,7 @@ export default function Entregas() {
 
               {/* Dirección y teléfono */}
               <div className="px-4 pb-3 space-y-2">
-                {p.estado === 'EN_REPARTO' && p.cliente_direccion && (
+                {p.cliente_direccion && (
                   <div className="space-y-2">
                     <div className="flex items-start gap-2 bg-slate-50 rounded-xl px-3 py-2.5">
                       <MapPin size={14} className="flex-shrink-0 mt-0.5"
@@ -244,6 +251,14 @@ export default function Entregas() {
           title={`Entregar ${modal.codigo}`}>
 
           <div className="bg-white rounded-xl p-4 mb-4">
+            {modal.tracking_externo && (
+              <div className="mb-2 pb-2 border-b border-slate-100">
+                <p className="text-xs text-slate-400">Tracking</p>
+                <p className="text-sm font-mono font-semibold text-slate-700">
+                  {modal.tracking_externo}
+                </p>
+              </div>
+            )}
             <p className="text-xs text-slate-400">Cliente</p>
             <p className="text-sm font-semibold text-slate-800">
               {modal.cliente_nombre}

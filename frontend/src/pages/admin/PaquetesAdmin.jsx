@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Package, Loader2, MessageCircle, Phone, MapPin, User, Navigation } from 'lucide-react'
+import { Package, Loader2, MessageCircle, Phone, MapPin, User, Navigation, Search, X } from 'lucide-react'
 import { usePaquetesAdmin, useTarifar, useMarcarEntregado } from '../../hooks/usePaquetes'
 import { useConductores } from '../../hooks/usePerfiles'
 import { useAuthStore } from '../../store/authStore'
@@ -51,6 +51,7 @@ export default function PaquetesAdmin() {
   const tarificarParam = params.get('tarificar')
 
   const [filtro,   setFiltro]   = useState(estadoParam ?? null)
+  const [busqueda, setBusqueda] = useState('')
   const [modal,    setModal]    = useState(null)
   const [precio,   setPrecio]   = useState('')
   const [fechaEst, setFechaEst] = useState('')
@@ -64,6 +65,15 @@ export default function PaquetesAdmin() {
   const [toast,    setToast]    = useState({ show: false, msg: '', type: 'success' })
 
   const { data: paquetes = [], isLoading } = usePaquetesAdmin(filtro)
+
+  // Búsqueda local por código interno (ENC) o tracking del courier
+  const q = busqueda.trim().toLowerCase()
+  const paquetesFiltrados = q
+    ? paquetes.filter(p =>
+        p.codigo?.toLowerCase().includes(q) ||
+        p.tracking_externo?.toLowerCase().includes(q) ||
+        p.cliente_nombre?.toLowerCase().includes(q))
+    : paquetes
   const { data: tarifas  = [] }            = useTarifas()
   const { mutateAsync: tarifar,   isPending: tarifando   } = useTarifar()
   const { mutateAsync: marcarEntregado, isPending: entregando } = useMarcarEntregado()
@@ -153,8 +163,27 @@ export default function PaquetesAdmin() {
       <Toast message={toast.msg} show={toast.show} type={toast.type}
         onHide={() => setToast(t => ({ ...t, show: false }))} />
 
+      {/* ── Buscador por tracking / ENC / cliente ── */}
+      <div className="px-5 pt-4 pb-1">
+        <div className="relative">
+          <Search size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input type="text" value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar por tracking, ENC o cliente"
+            className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-slate-200
+              bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+          {busqueda && (
+            <button onClick={() => setBusqueda('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* ── Filtros ── */}
-      <div className="px-5 pt-4 pb-2 overflow-x-auto">
+      <div className="px-5 pt-2 pb-2 overflow-x-auto">
         <div className="flex gap-2 w-max">
           {FILTROS.map(({ label, value }) => (
             <button key={label} onClick={() => setFiltro(value)}
@@ -179,14 +208,14 @@ export default function PaquetesAdmin() {
           </div>
         )}
 
-        {!isLoading && paquetes.length === 0 && (
+        {!isLoading && paquetesFiltrados.length === 0 && (
           <div className="text-center py-14">
             <Package size={44} className="text-slate-200 mx-auto mb-3" />
             <p className="text-slate-500 text-sm">No hay paquetes en este estado</p>
           </div>
         )}
 
-        {paquetes.map(p => (
+        {paquetesFiltrados.map(p => (
           <button key={p.id} onClick={() => openModal(p)}
             className="w-full bg-white rounded-2xl flex items-stretch
               overflow-hidden shadow-sm active:scale-95 transition text-left">
@@ -199,8 +228,15 @@ export default function PaquetesAdmin() {
               }
             </div>
             <div className="flex-1 px-4 py-3 min-w-0">
-              <div className="flex items-start justify-between mb-1">
-                <p className="text-xs font-mono text-slate-400">{p.codigo}</p>
+              <div className="flex items-start justify-between mb-1 gap-2">
+                <div className="min-w-0">
+                  {p.tracking_externo && (
+                    <p className="text-xs font-mono font-semibold text-slate-700 truncate">
+                      {p.tracking_externo}
+                    </p>
+                  )}
+                  <p className="text-xs font-mono text-slate-400">{p.codigo}</p>
+                </div>
                 <EstadoBadge estado={p.estado} />
               </div>
               <p className="text-sm font-semibold text-slate-800 truncate">
@@ -231,6 +267,24 @@ export default function PaquetesAdmin() {
           {/* Estado */}
           <div className="mb-4">
             <EstadoBadge estado={modal.estado} size="md" />
+          </div>
+
+          {/* Códigos: tracking del courier + interno */}
+          <div className="bg-white rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs text-slate-400">
+                {modal.tracking_externo ? 'Tracking del courier' : 'Código interno'}
+              </p>
+              <p className="text-sm font-mono font-semibold text-slate-800 truncate">
+                {modal.tracking_externo ?? modal.codigo}
+              </p>
+            </div>
+            {modal.tracking_externo && (
+              <div className="text-right flex-shrink-0 ml-3">
+                <p className="text-xs text-slate-400">Interno</p>
+                <p className="text-xs font-mono text-slate-500">{modal.codigo}</p>
+              </div>
+            )}
           </div>
 
           {/* ── CLIENTE — siempre visible ── */}

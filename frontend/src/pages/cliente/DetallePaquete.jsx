@@ -110,7 +110,18 @@ export default function DetallePaquete() {
 
         {/* Código y estado */}
         <div className="px-5 pb-5 pt-2">
-          <p className="text-slate-400 text-xs font-mono mb-1">{paquete.codigo}</p>
+          {paquete.tracking_externo ? (
+            <div className="mb-1">
+              <p className="text-sky-300 text-sm font-mono font-semibold">
+                {paquete.tracking_externo}
+              </p>
+              <p className="text-slate-400 text-[10px] font-mono">
+                Interno: {paquete.codigo}
+              </p>
+            </div>
+          ) : (
+            <p className="text-slate-400 text-xs font-mono mb-1">{paquete.codigo}</p>
+          )}
           <div className="flex items-center justify-between">
             <h1 className="text-white text-lg font-bold">
               {paquete.descripcion}

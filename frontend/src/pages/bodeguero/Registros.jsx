@@ -82,16 +82,23 @@ export default function Registros() {
             <button key={p.id} onClick={() => setDetalle(p)}
               className="w-full bg-white rounded-2xl overflow-hidden flex items-stretch
                 shadow-sm active:scale-95 transition text-left">
-              <div className="w-20 h-20 flex-shrink-0 bg-slate-50">
+              <div className="w-20 h-20 flex-shrink-0 bg-slate-100">
                 {p.foto_url
-                  ? <img src={p.foto_url} alt="" className="w-full h-full object-contain" />
+                  ? <img src={p.foto_url} alt="" className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center">
                       <Package size={24} className="text-slate-300" />
                     </div>}
               </div>
               <div className="flex-1 px-4 py-3 min-w-0">
                 <div className="flex items-start justify-between mb-1 gap-2">
-                  <p className="text-xs font-mono text-slate-400">{p.codigo}</p>
+                  <div className="min-w-0">
+                    {p.tracking_externo && (
+                      <p className="text-xs font-mono font-semibold text-slate-700 truncate">
+                        {p.tracking_externo}
+                      </p>
+                    )}
+                    <p className="text-xs font-mono text-slate-400">{p.codigo}</p>
+                  </div>
                   <EstadoBadge estado={p.estado} />
                 </div>
                 <p className="text-sm font-semibold text-slate-800 truncate">
@@ -135,6 +142,7 @@ function DetalleRegistro({ paquete, onClose, onToast }) {
   const { mutateAsync: eliminar,   isPending: eliminando } = useEliminarPaquete()
 
   const [form, setForm] = useState({
+    tracking_externo: paquete.tracking_externo ?? '',
     descripcion: paquete.descripcion ?? '',
     tienda:      paquete.tienda ?? '',
     largo_cm:    paquete.largo_cm ?? '',
@@ -197,6 +205,7 @@ function DetalleRegistro({ paquete, onClose, onToast }) {
       await actualizar({
         id:            paquete.id,
         foto_url,
+        tracking_externo: form.tracking_externo.trim() || null,
         descripcion:   form.descripcion.trim() || null,
         tienda:        form.tienda.trim() || null,
         largo_cm:      parseFloat(form.largo_cm) || null,
@@ -270,6 +279,10 @@ function DetalleRegistro({ paquete, onClose, onToast }) {
               {paquete.cliente_codigo ?? paquete.perfiles?.codigo_casillero}
             </span>
           </div>
+
+          {paquete.tracking_externo && (
+            <Dato label="Tracking del courier" valor={paquete.tracking_externo} />
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <Dato label="Descripción" valor={paquete.descripcion || '—'} />
@@ -348,6 +361,14 @@ function DetalleRegistro({ paquete, onClose, onToast }) {
           </div>
 
           {/* Datos */}
+          <div>
+            <input type="text" placeholder="Tracking del courier (opcional)"
+              value={form.tracking_externo}
+              autoCapitalize="characters"
+              onChange={e => setForm(f => ({ ...f, tracking_externo: e.target.value }))}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
+                font-mono outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
           <input type="text" placeholder="Descripción" value={form.descripcion}
             onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
