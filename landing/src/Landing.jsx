@@ -1,5 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import './landing.css';
+import { rastrearPaquete } from './lib/rastreo';
+
+/* ---------- estados del paquete para el timeline ---------- */
+const ESTADOS = [
+  { key: 'RECIBIDO',    label: 'Recibido en bodega', desc: 'Tu paquete llegó a Maicao' },
+  { key: 'TARIFADO',    label: 'Precio asignado',    desc: 'Listo para despacho' },
+  { key: 'EN_TRANSITO', label: 'En tránsito',        desc: 'En camino a Venezuela' },
+  { key: 'EN_REPARTO',  label: 'En reparto',         desc: 'Saliendo a tu dirección' },
+  { key: 'ENTREGADO',   label: 'Entregado',          desc: '¡Entregado con éxito!' },
+];
+const labelEstado = (k) => (ESTADOS.find((e) => e.key === k)?.label || k);
+const fmtFecha = (iso) => {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString('es-VE', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch { return ''; }
+};
 
 /* ============================================================
    CONFIGURACIÓN
@@ -29,6 +46,15 @@ const IcTruckSm = <Icon d={<><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7z"
 const IcSearch = <Icon d={<><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></>} />;
 const IcMail = <Icon d={<><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></>} />;
 const IcClock = <Icon d={<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>} />;
+const IcCheck = <Icon d={<path d="M5 12.5l4.5 4.5L19 7.5"/>} />;
+
+/* ---------- pasos de "Cómo funciona" ---------- */
+const STEPS = [
+  { ic: IcCart,      n: 'Paso 01', t: 'Compras',            d: 'Compras en Amazon, Shein, Temu o MercadoLibre y las envías a nuestra bodega en Maicao.' },
+  { ic: IcWarehouse, n: 'Paso 02', t: 'Recibimos en Maicao', d: 'Recibimos tu paquete, lo registramos y lo fotografiamos al llegar.' },
+  { ic: IcTruck,     n: 'Paso 03', t: 'Transportamos',       d: 'Viaja en nuestra ruta segura, con seguimiento en tiempo real desde tu celular.' },
+  { ic: IcPin,       n: 'Paso 04', t: 'Entregamos',          d: 'Lo llevamos a tu puerta en Venezuela y confirmamos con foto y hora exacta.' },
+];
 
 /* ---------- reveal on scroll ---------- */
 function useReveal() {
@@ -49,13 +75,31 @@ export default function Landing() {
   const rootRef = useReveal();
   const [guia, setGuia] = useState('');
 
-  // Rastreo temporal por WhatsApp (hasta conectar Supabase)
-  const rastrear = () => {
+  // Animación de "Cómo funciona": recorre los pasos y los marca en verde en bucle
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const reduce = typeof window !== 'undefined' && window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { setActive(STEPS.length); return; }
+    const id = setInterval(() => setActive((a) => (a >= STEPS.length ? 0 : a + 1)), 1200);
+    return () => clearInterval(id);
+  }, []);
+
+  // Estado del rastreo
+  const [cargando, setCargando] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [resultado, setResultado] = useState(null);
+
+  const rastrear = async () => {
     const code = guia.trim();
-    const msg = code
-      ? `Hola, quiero rastrear mi paquete. Mi número de guía es: ${code}`
-      : 'Hola, quiero rastrear mi paquete.';
-    window.open(waLink(msg), '_blank', 'noopener');
+    if (!code) { setErrorMsg('Ingresa tu código de rastreo.'); setResultado(null); return; }
+    setCargando(true);
+    setErrorMsg('');
+    setResultado(null);
+    const { paquete, error } = await rastrearPaquete(code);
+    setCargando(false);
+    if (error) { setErrorMsg(error); return; }
+    setResultado(paquete);
   };
 
   return (
@@ -90,11 +134,18 @@ export default function Landing() {
         <div className="ll-wrap ll-hero__inner">
           <div className="ll-hero__content hero-anim">
             <span className="ll-eyebrow" style={{ color: 'var(--sky)' }}>De Colombia a cualquier lugar de Venezuela</span>
-            <h1>Tu encomienda,<br /><span className="accent">segura y rastreada</span></h1>
+            <h1>Compra afuera,<br /><span className="accent">recibe en Venezuela</span></h1>
             <p className="lead">
-              Enviamos de Colombia a Venezuela con seguimiento en tiempo real,
-              foto de entrega y confirmación de hora.
+              Envía tus compras a nuestra bodega en Maicao y te las llevamos a
+              cualquier parte de Venezuela, con rastreo y foto de entrega.
             </p>
+            <div className="ll-hero__stores">
+              <span className="ll-hero__stores-label">Compra en:</span>
+              <span className="ll-chip">Amazon</span>
+              <span className="ll-chip">Shein</span>
+              <span className="ll-chip">Temu</span>
+              <span className="ll-chip">MercadoLibre</span>
+            </div>
             <div className="ll-hero__actions">
               <a className="ll-btn ll-btn--sky" href={waLink('Hola, quiero cotizar un envío a Venezuela.')}>Cotizar envío</a>
               <a className="ll-btn ll-btn--ghost" href="#rastreo">Rastrear paquete</a>
@@ -111,11 +162,73 @@ export default function Landing() {
             value={guia}
             onChange={(e) => setGuia(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && rastrear()}
-            placeholder="Ingresa tu número de guía"
-            aria-label="Número de guía"
+            placeholder="Tu código de Amazon, courier o ENC-XXXX"
+            aria-label="Código de rastreo"
           />
-          <button className="ll-btn ll-btn--primary" onClick={rastrear}>Buscar</button>
+          <button className="ll-btn ll-btn--primary" onClick={rastrear} disabled={cargando}>
+            {cargando ? 'Buscando…' : 'Rastrear'}
+          </button>
         </div>
+
+        {/* Resultado */}
+        {(cargando || errorMsg || resultado) && (
+          <div className="ll-tr">
+            {cargando && (
+              <div className="ll-tr__msg">Buscando tu paquete…</div>
+            )}
+
+            {!cargando && errorMsg && (
+              <div className="ll-tr__msg ll-tr__msg--error">{errorMsg}</div>
+            )}
+
+            {!cargando && resultado && (() => {
+              const idx = ESTADOS.findIndex((e) => e.key === resultado.estado);
+              const entregado = resultado.estado === 'ENTREGADO';
+              return (
+                <div className="ll-tr__card">
+                  <div className="ll-tr__head">
+                    <div>
+                      <div className="ll-tr__code-label">Código de rastreo</div>
+                      <div className="ll-tr__code">{resultado.tracking_externo || resultado.codigo}</div>
+                      {resultado.tamanio && <div className="ll-tr__size">Tamaño {resultado.tamanio}</div>}
+                    </div>
+                    <span className={`ll-tr__badge${entregado ? ' is-delivered' : ''}`}>{labelEstado(resultado.estado)}</span>
+                  </div>
+
+                  <ol className="ll-tr__timeline">
+                    {ESTADOS.map((e, i) => {
+                      const done = i <= idx;
+                      const current = i === idx;
+                      return (
+                        <li key={e.key} className={`ll-tr__step${done ? ' is-done' : ''}${current ? ' is-current' : ''}`}>
+                          <span className="ll-tr__dot">{done ? '✓' : i + 1}</span>
+                          <span className="ll-tr__step-body">
+                            <span className="ll-tr__step-label">{e.label}</span>
+                            <span className="ll-tr__step-desc">{e.desc}</span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+
+                  {(resultado.fecha_recepcion || resultado.fecha_estimada || resultado.fecha_entrega) && (
+                    <div className="ll-tr__dates">
+                      {resultado.fecha_recepcion && (
+                        <div><span>Recibido</span><b>{fmtFecha(resultado.fecha_recepcion)}</b></div>
+                      )}
+                      {resultado.fecha_estimada && !entregado && (
+                        <div><span>Entrega estimada</span><b>{fmtFecha(resultado.fecha_estimada)}</b></div>
+                      )}
+                      {resultado.fecha_entrega && (
+                        <div><span>Entregado</span><b>{fmtFecha(resultado.fecha_entrega)}</b></div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {/* ---------------- LOGO DE MARCA (sobre fondo blanco) ---------------- */}
@@ -127,28 +240,23 @@ export default function Landing() {
       <section className="ll-section" id="como">
         <div className="ll-wrap">
           <div className="ll-section__head reveal">
+            <span className="ll-eyebrow">El proceso</span>
             <h2>Cómo funciona</h2>
-            <p>Tres pasos, sin trámites complicados. Tú envías, nosotros nos encargamos del resto.</p>
+            <p>Cuatro pasos, sin trámites complicados. Tú compras, nosotros nos encargamos del resto.</p>
           </div>
-          <div className="ll-steps">
-            <div className="ll-step reveal">
-              <div className="ll-step__badge">{IcWarehouse}</div>
-              <span className="ll-step__n">Paso 01</span>
-              <h3>Recibimos en Maicao</h3>
-              <p>Llevas tu paquete a nuestra bodega. Lo registramos y fotografiamos al recibirlo.</p>
-            </div>
-            <div className="ll-step reveal">
-              <div className="ll-step__badge">{IcTruck}</div>
-              <span className="ll-step__n">Paso 02</span>
-              <h3>En camino a tu destino</h3>
-              <p>Viaja en nuestra ruta segura. Sigues su estado desde tu celular en todo momento.</p>
-            </div>
-            <div className="ll-step reveal">
-              <div className="ll-step__badge">{IcPin}</div>
-              <span className="ll-step__n">Paso 03</span>
-              <h3>Entregado</h3>
-              <p>Confirmamos la entrega con foto y hora exacta. Sin sorpresas, sin dudas.</p>
-            </div>
+          <div className="ll-steps ll-steps--4">
+            <div className="ll-steps__track"><div className="ll-steps__fill" style={{ width: `${Math.min(active, STEPS.length - 1) / (STEPS.length - 1) * 100}%` }} /></div>
+            {STEPS.map((s, i) => {
+              const done = i <= active;
+              return (
+                <div key={i} className={`ll-step${done ? ' is-done' : ''}`}>
+                  <div className="ll-step__badge">{done ? IcCheck : s.ic}</div>
+                  <span className="ll-step__n">{s.n}</span>
+                  <h3>{s.t}</h3>
+                  <p>{s.d}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
