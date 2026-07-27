@@ -1,6 +1,20 @@
 # Los Líderes Encomiendas · Changelog
 
 
+### [0.3.10](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.9...v0.3.10) (2026-07-27)
+
+
+### ✨ Nuevas funcionalidades
+
+* landing comercial (sitio público) ([c981761](https://github.com/loslideres-dev/loslideres-app/commit/c981761f05b82e171be2c250e2f6c3e18d3aafaa))
+
+
+### 🐛 Correcciones
+
+* arco decorativo bloqueaba el toque en botones (pointer-events) ([d2cef97](https://github.com/loslideres-dev/loslideres-app/commit/d2cef976a4d3da730e47cb9322222b3336621570))
+* enlaces de app a la raíz, rastreo por WhatsApp temporal, contraste de botón en móvil ([7bf01d2](https://github.com/loslideres-dev/loslideres-app/commit/7bf01d2f3a43f0e0f3d47e82468d569f4cc51798))
+* notificaciones al cliente y conductor usan tracking del courier cuando existe ([c2f62fa](https://github.com/loslideres-dev/loslideres-app/commit/c2f62fa159c321001d18c95e4e641d27543deb4b))
+
 ### [0.3.9](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.8...v0.3.9) (2026-07-25)
 
 
