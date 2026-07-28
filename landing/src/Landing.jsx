@@ -47,6 +47,10 @@ const IcSearch = <Icon d={<><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3
 const IcMail = <Icon d={<><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></>} />;
 const IcClock = <Icon d={<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>} />;
 const IcCheck = <Icon d={<path d="M5 12.5l4.5 4.5L19 7.5"/>} />;
+const IcStoreBox = <Icon size={16} d={<><path d="m12 3 8 4v10l-8 4-8-4V7z"/><path d="M4 7l8 4 8-4"/><path d="M12 11v10"/></>} />;
+const IcStoreShirt = <Icon size={16} d={<><path d="M6 4l3-1 3 2 3-2 3 1 2 4-3 2v9H7v-9L4 8z"/></>} />;
+const IcStoreBag = <Icon size={16} d={<><path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></>} />;
+const IcStoreCart = <Icon size={16} d={<><path d="M3 4h2l2 12h11"/><path d="M7 16h11l2-8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></>} />;
 
 /* ---------- pasos de "Cómo funciona" ---------- */
 const STEPS = [
@@ -141,14 +145,13 @@ export default function Landing() {
             </p>
             <div className="ll-hero__stores">
               <span className="ll-hero__stores-label">Compra en:</span>
-              <span className="ll-chip">Amazon</span>
-              <span className="ll-chip">Shein</span>
-              <span className="ll-chip">Temu</span>
-              <span className="ll-chip">MercadoLibre</span>
+              <span className="ll-chip">{IcStoreBox}Amazon</span>
+              <span className="ll-chip">{IcStoreShirt}Shein</span>
+              <span className="ll-chip">{IcStoreBag}Temu</span>
+              <span className="ll-chip">{IcStoreCart}MercadoLibre</span>
             </div>
             <div className="ll-hero__actions">
               <a className="ll-btn ll-btn--sky" href={waLink('Hola, quiero cotizar un envío a Venezuela.')}>Cotizar envío</a>
-              <a className="ll-btn ll-btn--ghost" href="#rastreo">Rastrear paquete</a>
             </div>
           </div>
         </div>
@@ -258,6 +261,26 @@ export default function Landing() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ---------------- TIENDAS (barra de logos) ---------------- */}
+      <section className="ll-brands" aria-label="Tiendas que puedes usar">
+        <div className="ll-wrap">
+          <ul className="ll-brands__row">
+            <li className="ll-brand">
+              <img src="/AMAZON.png" alt="Amazon" loading="lazy" />
+            </li>
+            <li className="ll-brand">
+              <img src="/SHEIN.png" alt="Shein" className="ll-brand__tall" loading="lazy" />
+            </li>
+             <li className="ll-brand">
+              <img src="/TEMU.png" alt="Temu" className="ll-brand__tall" loading="lazy" />
+            </li>
+            <li className="ll-brand">
+              <img src="/MERCADOLIBRE.png" alt="MercadoLibre" className="ll-brand__tall" loading="lazy" />
+            </li>
+          </ul>
         </div>
       </section>
 

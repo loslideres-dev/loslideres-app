@@ -126,13 +126,16 @@
 .ll-hero__actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
 /* chips de tiendas en el hero */
-.ll-hero__stores { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 26px; }
-.ll-hero__stores-label { font-size: 13px; color: #9fc0e6; margin-right: 2px; }
+.ll-hero__stores { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; margin: 0 0 26px; }
+.ll-hero__stores-label { font-size: 16px; font-weight: 600; color: #fff; margin-right: 4px; white-space: nowrap; }
 .ll-chip {
-  background: rgba(79,195,247,.16); color: #cfe8fb;
-  font-size: 13px; font-weight: 500; padding: 6px 13px; border-radius: 20px;
-  border: 1px solid rgba(79,195,247,.35);
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(13,43,94,.55); color: #fff;
+  font-size: 15px; font-weight: 600; padding: 10px 18px; border-radius: 14px;
+  border: 1px solid rgba(79,195,247,.45);
+  box-shadow: 0 2px 8px rgba(6,23,55,.25);
 }
+.ll-chip svg { color: var(--sky); flex-shrink: 0; }
 
 /* logo arriba a la derecha del hero (transparente, sin caja) */
 .ll-hero__badge {
@@ -259,6 +262,38 @@
 }
 .ll-step h3 { font-family: var(--display); font-weight: 600; font-size: 19px; color: var(--navy); margin: 0 0 8px; }
 .ll-step p { font-size: 15px; color: var(--muted); margin: 0; max-width: 280px; margin-inline: auto; }
+
+/* ---------- barra de tiendas ---------- */
+.ll-brands { padding: 34px 0; background: transparent; border: 1px solid transparent; }
+.ll-brands__row {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 0;
+}
+.ll-brand {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 54px; padding: 0 42px;
+  border-left: 1px solid var(--line);
+}
+.ll-brand:first-child { border-left: 0; }
+.ll-brand img {
+  height: 34px; width: auto; max-width: 160px;
+  object-fit: contain; display: block;
+}
+/* logos apilados (ícono + texto) necesitan más alto para leerse */
+.ll-brand img.ll-brand__tall { height: 50px; }
+
+@media (max-width: 768px) {
+  .ll-brand { height: 46px; padding: 0 26px; }
+  .ll-brand img { height: 28px; }
+  .ll-brand img.ll-brand__tall { height: 42px; }
+}
+@media (max-width: 520px) {
+  .ll-brands__row { gap: 10px 0; }
+  .ll-brand { height: 40px; padding: 0 18px; }
+  .ll-brand img { height: 24px; }
+  .ll-brand img.ll-brand__tall { height: 36px; }
+}
 
 /* ---------- servicios ---------- */
 .ll-services { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
@@ -407,6 +442,9 @@
   .ll-track { max-width: 100%; }
   .ll-hero__actions { flex-direction: column; }
   .ll-hero__actions .ll-btn { justify-content: center; }
+  .ll-hero__stores { flex-wrap: wrap; }
+  .ll-hero__stores-label { flex-basis: 100%; margin-bottom: 4px; }
+  .ll-chip { font-size: 13px; padding: 8px 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
