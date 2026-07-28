@@ -52,5 +52,6 @@ export const BODEGA_INFO = {
   calle:    'Calle 10 #22-46',
   ciudad:   'Maicao, La Guajira, 442001',
   pais:     'Colombia',
-  telefono: '+57 300 000 0000',
+  barrio:   'Barrio El Carmen',
+  telefono: '+57 301 6097783',
 }

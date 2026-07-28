@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { ArrowLeft, Package, MapPin, Calendar, User, CreditCard } from 'lucide-react'
 import EstadoBadge from '../../components/ui/EstadoBadge'
 import ClienteLayout from '../../components/layout/ClienteLayout'
+import ImageViewer from '../../components/ui/ImageViewer'
 
 const TIMELINE = [
   { estado: 'RECIBIDO',    label: 'Recibido en bodega',   field: 'fecha_recepcion' },
@@ -42,6 +44,7 @@ function InfoRow({ icon: Icon, label, value }) {
 export default function DetallePaquete() {
   const { id }   = useParams()
   const navigate = useNavigate()
+  const [visorAbierto, setVisorAbierto] = useState(false)
 
   const { data: paquete, isLoading, isError } = useQuery({
     queryKey: ['paquete', id],
@@ -83,6 +86,14 @@ export default function DetallePaquete() {
   return (
     <ClienteLayout>
 
+      {/* Visor de imagen a pantalla completa */}
+      {visorAbierto && paquete.foto_url && (
+        <ImageViewer
+          src={paquete.foto_url}
+          onClose={() => setVisorAbierto(false)}
+        />
+      )}
+
       {/* ── Header con foto ── */}
       <div className="relative" style={{ background: '#0D2B5E' }}>
         {/* Botón volver */}
@@ -94,11 +105,23 @@ export default function DetallePaquete() {
           <ArrowLeft size={18} className="text-white" />
         </button>
 
-        {/* Foto */}
-        <div className="w-full h-56 bg-slate-800">
+        {/* Foto — clickeable para expandir */}
+        <button
+          onClick={() => paquete.foto_url && setVisorAbierto(true)}
+          className={`w-full h-56 bg-slate-800 block text-left
+            ${paquete.foto_url ? 'cursor-pointer active:opacity-90' : 'cursor-default'}`}
+        >
           {paquete.foto_url
-            ? <img src={paquete.foto_url} alt="paquete"
-                className="w-full h-full object-cover opacity-80" />
+            ? <>
+                <img src={paquete.foto_url} alt="paquete"
+                  className="w-full h-full object-cover opacity-80" />
+                {/* Hint sutil */}
+                <span className="absolute bottom-20 right-4 text-white text-[10px]
+                  font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(0,0,0,0.45)' }}>
+                  Toca para ampliar
+                </span>
+              </>
             : <div className="w-full h-full flex items-center justify-center">
                 <Package size={64} className="text-slate-600" />
               </div>
@@ -106,7 +129,7 @@ export default function DetallePaquete() {
           {/* Gradiente abajo */}
           <div className="absolute bottom-0 left-0 right-0 h-20"
             style={{ background: 'linear-gradient(to top, #0D2B5E, transparent)' }} />
-        </div>
+        </button>
 
         {/* Código y estado */}
         <div className="px-5 pb-5 pt-2">
@@ -156,7 +179,7 @@ export default function DetallePaquete() {
         </div>
       )}
 
-      {/* ── Timeline de estados ── */}
+      {/* ── Timeline ── */}
       <div className="mx-5 mb-4 bg-white rounded-2xl shadow-sm p-5">
         <p className="text-xs font-semibold text-slate-400 tracking-wider mb-4">
           SEGUIMIENTO
@@ -168,7 +191,6 @@ export default function DetallePaquete() {
             const last    = i === TIMELINE.length - 1
             return (
               <div key={estado} className="flex gap-3">
-                {/* Línea y punto */}
                 <div className="flex flex-col items-center">
                   <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-0.5 border-2
                     transition-all
@@ -184,7 +206,6 @@ export default function DetallePaquete() {
                     />
                   )}
                 </div>
-                {/* Label */}
                 <div className="pb-4 last:pb-0">
                   <p className={`text-sm font-medium leading-tight
                     ${current
@@ -204,7 +225,7 @@ export default function DetallePaquete() {
         </div>
       </div>
 
-      {/* ── Detalles del paquete ── */}
+      {/* ── Detalles ── */}
       <div className="mx-5 mb-4 bg-white rounded-2xl shadow-sm p-5">
         <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
           DETALLES
@@ -242,7 +263,7 @@ export default function DetallePaquete() {
         )}
       </div>
 
-      {/* ── Entrega (si está entregado) ── */}
+      {/* ── Entrega ── */}
       {paquete.estado === 'ENTREGADO' && (
         <div className="mx-5 mb-4 bg-white rounded-2xl shadow-sm p-5">
           <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">

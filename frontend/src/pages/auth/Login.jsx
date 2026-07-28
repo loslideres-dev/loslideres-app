@@ -17,11 +17,9 @@ const loginSchema = z.object({
 })
 
 const registerSchema = z.object({
-  nombre:    z.string().min(2, 'Ingresa tu nombre completo'),
-  email:     z.string().email('Correo inválido'),
-  password:  z.string().min(6, 'Mínimo 6 caracteres'),
-  telefono:  z.string().min(7, 'Teléfono inválido'),
-  direccion: z.string().min(10, 'Ingresa tu dirección completa en Maracaibo'),
+  nombre:   z.string().min(2, 'Ingresa tu nombre completo'),
+  email:    z.string().email('Correo inválido'),
+  password: z.string().min(6, 'Mínimo 6 caracteres'),
 })
 
 // ── Botón Google ──────────────────────────────────────────────────────────────
@@ -62,8 +60,6 @@ function LoginForm({ onSwitch }) {
 
   const checkOnboarding = async (user) => {
     const roles = user?.user_metadata?.roles ?? ['cliente']
-    // Solo los clientes puros pasan por onboarding.
-    // Admin, bodeguero y conductor van directo a su panel.
     if (roles.includes('admin') || roles.includes('bodeguero') || roles.includes('conductor')) {
       return false
     }
@@ -85,7 +81,6 @@ function LoginForm({ onSwitch }) {
         navigate('/onboarding', { replace: true }); return
       }
       const roles = data.user?.user_metadata?.roles ?? ['cliente']
-      // Prioridad de redirección por rol
       const destino =
         roles.includes('admin')     ? '/admin/dashboard'     :
         roles.includes('bodeguero') ? '/bodeguero/recepcion' :
@@ -204,7 +199,7 @@ function RegisterForm({ onSwitch }) {
     resolver: zodResolver(registerSchema),
   })
 
-  const onSubmit = async ({ nombre, email, password, telefono, direccion }) => {
+  const onSubmit = async ({ nombre, email, password }) => {
     setLoading(true); setError('')
     try {
       const { data, error: err } = await supabase.auth.signUp({
@@ -213,8 +208,6 @@ function RegisterForm({ onSwitch }) {
         options: {
           data: {
             nombre,
-            telefono,
-            direccion_entrega: direccion,
             roles: ['cliente'],
           },
         },
@@ -318,33 +311,6 @@ function RegisterForm({ onSwitch }) {
           </div>
           {errors.password &&
             <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Teléfono WhatsApp
-          </label>
-          <input type="tel" autoComplete="tel" placeholder="+58 412 000 0000"
-            {...register('telefono')}
-            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
-              focus:ring-2 focus:ring-blue-500
-              ${errors.telefono ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
-          {errors.telefono &&
-            <p className="mt-1 text-xs text-red-600">{errors.telefono.message}</p>}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Dirección de entrega en Maracaibo
-          </label>
-          <textarea rows={2}
-            placeholder="Av. Las Delicias, Edif. Torre Norte, Apto 4B. Referencia: frente al CCCT."
-            {...register('direccion')}
-            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
-              focus:ring-2 focus:ring-blue-500 resize-none
-              ${errors.direccion ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
-          {errors.direccion &&
-            <p className="mt-1 text-xs text-red-600">{errors.direccion.message}</p>}
         </div>
 
         <button type="submit" disabled={loading}

@@ -2,7 +2,7 @@
 > App multi-rol para gestión de encomiendas puerta a puerta, de Maicao (Colombia) a Maracaibo (Venezuela)
 
 ![Status](https://img.shields.io/badge/status-beta-blue)
-![Version](https://img.shields.io/badge/version-v0.4.0-green)
+![Version](https://img.shields.io/badge/version-v0.4.2-green)
 ![Stack](https://img.shields.io/badge/stack-React%20%7C%20Supabase%20%7C%20Railway-orange)
 
 ## Descripción
@@ -13,7 +13,7 @@ Es una aplicación web con **cuatro experiencias según el rol** del usuario (cl
 
 ## App en producción
 
-**https://loslideres-app-production.up.railway.app**
+**https://app.loslideresencomiendas.com**
 
 ## Stack tecnológico
 
@@ -33,7 +33,7 @@ Es una aplicación web con **cuatro experiencias según el rol** del usuario (cl
 
 | Rol | Qué hace |
 |-----|----------|
-| **Cliente** | Ve su código de casillero (LID-XXXX), la dirección de la bodega, y el estado + precio de cada paquete. Recibe notificaciones en cada cambio. |
+| **Cliente** | Ve su código de casillero (LID-XXXX), la dirección de la bodega, y el estado + precio de cada paquete. Recibe notificaciones en cada cambio. Puede contactar a Los Líderes por WhatsApp desde el casillero. |
 | **Bodeguero** | Registra los paquetes que llegan a Maicao: foto (cámara o galería), tracking del courier, medidas, peso, y los asigna a un casillero. Puede editar/eliminar registros en estado RECIBIDO. Ve su reporte de recepciones y comisión. |
 | **Administración** | Asigna precio, método de pago del cliente, conductor y monto de traslado (todo al tarifar). Gestiona usuarios, tarifas (⚙️) y ve reportes del negocio. Puede marcar entregas. |
 | **Conductor** | Ve los paquetes asignados con mapa y navegación desde que se le asignan. Marca "en tránsito" (al viajar) y "en reparto" (al llegar), y registra la entrega. Ve su reporte de entregas. |
@@ -70,7 +70,7 @@ loslideres-app/
 │   │   ├── assets/              # logo.png, logo-mini.png, logo-full.png
 │   │   ├── components/
 │   │   │   ├── layout/         # AdminLayout, BodegueroLayout, ConductorLayout, ClienteLayout
-│   │   │   └── ui/             # Modal, Toast, EstadoBadge, NotifBell, Tour
+│   │   │   └── ui/             # Modal, Toast, EstadoBadge, NotifBell, Tour, ImageViewer
 │   │   ├── constants/          # roles, estados, tamaños, métodos de pago
 │   │   ├── hooks/              # usePaquetes, usePerfiles, useTarifas, useConfig,
 │   │   │                       #   useNotificaciones, useReportes, useReporteAdmin, useVersion
@@ -88,7 +88,7 @@ loslideres-app/
 │   ├── nixpacks.toml          # Config de build de Railway
 │   ├── railway.json           # Config de deploy de Railway
 │   └── package.json
-├── landing/                     # Landing pública con rastreo de paquetes (mismo stack)
+├── landing/                     # Landing pública con rastreo de paquetes
 ├── CHANGELOG.md
 └── README.md
 ```
@@ -117,6 +117,10 @@ loslideres-app/
 | Admin | Reporte del negocio: financiero, operativo, tendencias, rankings (con gráficos) | v0.4.0 |
 | Paquetes | Tracking del courier en toda la app + búsqueda por ENC o tracking | v0.4.0 |
 | Conductor | Mapa visible desde que el paquete se asigna | v0.4.0 |
+| UX | Visor de imagen a pantalla completa (paquetes en admin, bodeguero y cliente) | v0.4.2 |
+| Cliente | Botón WhatsApp de contacto directo desde el casillero | v0.4.2 |
+| Admin | Correo y dirección (→ Maps) visibles en el detalle de usuario | v0.4.2 |
+| Auth | Registro simplificado: solo nombre, correo y contraseña | v0.4.2 |
 
 ## Notificaciones in-app
 
@@ -162,13 +166,13 @@ npm run dev            # genera version.json automáticamente
 ```env
 VITE_SUPABASE_URL=https://tuproyecto.supabase.co
 VITE_SUPABASE_ANON_KEY=tu_anon_key
-VITE_APP_VERSION=0.4.0
+VITE_APP_VERSION=0.4.2
 VITE_APP_NAME=Los Líderes Encomiendas
 ```
 
 ## Versionado
 
-Conventional Commits + standard-version. El build number se genera en cada `dev`/`build` a partir de la cantidad de commits, y se muestra en el login: `v0.4.0 (build N)`.
+Conventional Commits + standard-version. El build number se genera en cada `dev`/`build` a partir de la cantidad de commits, y se muestra en el login: `v0.4.2 (build N)`.
 
 ```bash
 npm run release          # sube versión según commits + regenera version.json
@@ -214,17 +218,15 @@ Paleta: Blanco `#FFFFFF` · Azul cielo `#4FC3F7` · Azul medio `#1565C0` · Azul
 
 ## Roadmap
 
-- Página de rastreo público en la landing (en curso).
 - MVP2: contabilidad y liquidaciones (cierres por conductor y bodeguero).
 - MVP3: notificaciones por WhatsApp automáticas.
 - PWA instalable (resuelve dark mode de Samsung + habilita push real).
-- Dominio propio.
 
 ## Pendientes conocidos
 
 - Bug menor: en `PaquetesAdmin`, al cambiar de filtro con `?tarificar=` en la URL, el modal puede auto-abrirse (fix propuesto: bandera `modalAbiertoAuto`, no aplicado).
 - Módulo de Auditoría oculto del navbar (el fix del join está aplicado en el hook, pero se dejó oculto por decisión de producto).
-- El paso a EN_TRANSITO por el conductor aplica a paquetes tarifados con el flujo nuevo (v0.4.0+).
+- El campo `email` en el detalle de usuario requiere que `useUsuarios` lo incluya en el select desde `perfiles` o via vista de `auth.users`.
 
 ## Autor
 

@@ -26,7 +26,7 @@ const fmtFecha = (iso) => {
 const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
 const APP_URL  = env.VITE_APP_URL  || 'https://loslideres-app-production.up.railway.app';
 const WHATSAPP = env.VITE_WHATSAPP || '584246282123'; // código país + número, sin +
-const EMAIL    = env.VITE_EMAIL    || 'loslideresencomiendas@gmail.com';
+const EMAIL    = env.VITE_EMAIL    || 'soporte@loslideresencomiendas.com';
 
 const waLink = (msg) =>
   `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;

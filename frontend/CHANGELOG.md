@@ -1,6 +1,20 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [0.4.2] — 2026-07-28
+
+### ✨ Nuevas funcionalidades
+
+* **Visor de imagen a pantalla completa** — al tocar la foto de un paquete en el modal del admin, en los registros del bodeguero y en el detalle del cliente, la imagen se expande en un overlay oscuro. Tap fuera o botón X para cerrar. Componente reutilizable `ImageViewer.jsx`.
+* **Botón WhatsApp en Casillero** — el cliente puede contactar a Los Líderes directamente desde su pantalla de casillero. El mensaje pre-armado incluye su nombre y código de casillero.
+
+### 🔧 Mejoras
+
+* **Usuarios — correo electrónico visible** — el modal de detalle de usuario muestra el correo como enlace `mailto:`, visible para todos los roles.
+* **Usuarios — dirección abre Google Maps** — al tocar la dirección de entrega en el detalle de un usuario, se abre Google Maps con la dirección pre-cargada.
+* **Registro simplificado** — el formulario de "Crear cuenta" ya no pide teléfono ni dirección. Solo nombre, correo y contraseña. Los datos de entrega se completan en el onboarding, evitando la duplicación.
+
+
 ## [0.4.0](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.10...v0.4.0) (2026-07-28)
 
 

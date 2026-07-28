@@ -26,13 +26,25 @@ const FORM_INICIAL = {
   nombre: '', email: '', password: '', rol: 'cliente',
 }
 
+// Roles que muestran teléfono y nombre en el detalle (además del cliente que ya los tiene)
+const ROLES_CON_CONTACTO = ['bodeguero', 'conductor', 'admin']
+
+function tieneRolContacto(roles = []) {
+  return roles.some(r => ROLES_CON_CONTACTO.includes(r))
+}
+
+function mapsUrl(direccion) {
+  const query = encodeURIComponent(`${direccion}, Maracaibo, Venezuela`)
+  return `https://www.google.com/maps/search/?api=1&query=${query}`
+}
+
 export default function Usuarios() {
   const [filtroRol, setFiltroRol] = useState(null)
   const [query,     setQuery]     = useState('')
   const [modal,     setModal]     = useState(false)
   const [form,      setForm]      = useState(FORM_INICIAL)
   const [creando,   setCreando]   = useState(false)
-  const [detalle,   setDetalle]   = useState(null)   // usuario seleccionado para ver
+  const [detalle,   setDetalle]   = useState(null)
   const [toast,     setToast]     = useState({ show: false, msg: '', type: 'success' })
 
   const { data: usuarios = [], isLoading, refetch } = useUsuarios(filtroRol)
@@ -49,7 +61,6 @@ export default function Usuarios() {
   const handleCrear = async () => {
     setCreando(true)
     try {
-      // 1. Crear el usuario con el cliente secundario (no toca la sesión admin)
       const { data, error } = await supabaseSignup.auth.signUp({
         email:    form.email.trim(),
         password: form.password,
@@ -147,7 +158,7 @@ export default function Usuarios() {
                       {u.nombre}
                     </p>
                     <p className="text-xs text-slate-400 font-mono">
-                      {u.codigo_casillero}
+                      {u.codigo_casillero ?? u.email ?? ''}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -174,7 +185,7 @@ export default function Usuarios() {
         }
       </div>
 
-      {/* Modal detalle de usuario */}
+      {/* ── Modal detalle de usuario ── */}
       <Modal open={!!detalle} onClose={() => setDetalle(null)}
         title={detalle?.nombre ?? 'Usuario'}>
         {detalle && (
@@ -202,6 +213,8 @@ export default function Usuarios() {
 
             {/* Datos */}
             <div className="space-y-2">
+
+              {/* Casillero — solo clientes */}
               {detalle.codigo_casillero && (
                 <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-3">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center
@@ -216,6 +229,27 @@ export default function Usuarios() {
                   </div>
                 </div>
               )}
+
+              {/* Correo electrónico — siempre visible si está disponible */}
+              {detalle.email && (
+                <a href={`mailto:${detalle.email}`}
+                  className="flex items-center gap-3 bg-white rounded-xl px-4 py-3
+                    active:scale-95 transition">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center
+                    flex-shrink-0" style={{ background: '#EEF2F8' }}>
+                    <Mail size={15} style={{ color: '#1565C0' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-slate-400">Correo electrónico</p>
+                    <p className="text-sm font-semibold text-slate-800 truncate"
+                      style={{ color: '#1565C0' }}>
+                      {detalle.email}
+                    </p>
+                  </div>
+                </a>
+              )}
+
+              {/* Teléfono — visible para todos los roles si existe */}
               {detalle.telefono && (
                 <a href={`tel:${detalle.telefono}`}
                   className="flex items-center gap-3 bg-white rounded-xl px-4 py-3
@@ -232,20 +266,36 @@ export default function Usuarios() {
                   </div>
                 </a>
               )}
+
+              {/* Dirección — clickeable a Google Maps */}
               {detalle.direccion_entrega && (
-                <div className="flex items-start gap-3 bg-white rounded-xl px-4 py-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center
-                    flex-shrink-0" style={{ background: '#FEF3C7' }}>
-                    <MapPin size={15} style={{ color: '#B45309' }} />
+                <a
+                  href={mapsUrl(detalle.direccion_entrega)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-start gap-3 bg-white rounded-xl overflow-hidden
+                    active:scale-95 transition"
+                >
+                  <div className="flex items-start gap-3 px-4 py-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center
+                      flex-shrink-0" style={{ background: '#FEF3C7' }}>
+                      <MapPin size={15} style={{ color: '#B45309' }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-400">Dirección de entrega</p>
+                      <p className="text-sm font-medium break-words"
+                        style={{ color: '#B45309' }}>
+                        {detalle.direccion_entrega}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: '#B45309', opacity: 0.7 }}>
+                        Toca para abrir en Maps
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-400">Dirección de entrega</p>
-                    <p className="text-sm font-medium text-slate-800 break-words">
-                      {detalle.direccion_entrega}
-                    </p>
-                  </div>
-                </div>
+                </a>
               )}
+
+              {/* Fecha de registro */}
               <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center
                   flex-shrink-0" style={{ background: '#EEF2F8' }}>
@@ -262,12 +312,13 @@ export default function Usuarios() {
                   </p>
                 </div>
               </div>
+
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Modal crear usuario */}
+      {/* ── Modal crear usuario ── */}
       <Modal open={modal} onClose={() => setModal(false)} title="Crear usuario">
         <div className="space-y-3">
           <input type="text" placeholder="Nombre completo *"

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Copy, LogOut, ChevronRight, AlertCircle } from 'lucide-react'
+import { Copy, LogOut, ChevronRight, AlertCircle, MessageCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
 import { useMiPerfil } from '../../hooks/usePerfiles'
@@ -9,6 +9,8 @@ import Toast from '../../components/ui/Toast'
 import Tour from '../../components/ui/Tour'
 import NotifBell from '../../components/ui/NotifBell'
 import { BODEGA_INFO } from '../../constants/roles'
+
+const WHATSAPP_ADMIN = '584246282123'
 
 function buildDireccion(nombre, codigo) {
   return [
@@ -35,7 +37,6 @@ export default function Casillero() {
   const codigo   = perfil?.codigo_casillero
     ?? user?.user_metadata?.codigo_casillero ?? '????'
 
-  // Perfil incompleto = falta teléfono o dirección
   const perfilIncompleto = perfil && (!perfil.telefono || !perfil.direccion_entrega)
 
   const handleCopy = () => {
@@ -50,9 +51,12 @@ export default function Casillero() {
 
   const handleFinishTour = () => {
     setShowTour(false)
-    // Si el perfil está incompleto, redirigir a perfil
     if (perfilIncompleto) navigate('/cliente/perfil?completar=1')
   }
+
+  const whatsappUrl = `https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(
+    `Hola, soy ${nombre} (casillero ${codigo}). Necesito ayuda con mi envío.`
+  )}`
 
   return (
     <ClienteLayout>
@@ -100,82 +104,98 @@ export default function Casillero() {
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto pb-6">
 
-      {/* Alerta perfil incompleto */}
-      {perfilIncompleto && (
-        <div className="mx-5 mt-4">
-          <button onClick={() => navigate('/cliente/perfil?completar=1')}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl
-              border-2 text-left active:scale-95 transition"
-            style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
-            <AlertCircle size={20} style={{ color: '#F59E0B' }} className="flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold" style={{ color: '#92400E' }}>
-                Completa tu perfil
-              </p>
-              <p className="text-xs" style={{ color: '#B45309' }}>
-                Necesitamos tu teléfono y dirección para entregarte tus paquetes
-              </p>
+        {/* Alerta perfil incompleto */}
+        {perfilIncompleto && (
+          <div className="mx-5 mt-4">
+            <button onClick={() => navigate('/cliente/perfil?completar=1')}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                border-2 text-left active:scale-95 transition"
+              style={{ borderColor: '#F59E0B', background: '#FFFBEB' }}>
+              <AlertCircle size={20} style={{ color: '#F59E0B' }} className="flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold" style={{ color: '#92400E' }}>
+                  Completa tu perfil
+                </p>
+                <p className="text-xs" style={{ color: '#B45309' }}>
+                  Necesitamos tu teléfono y dirección para entregarte tus paquetes
+                </p>
+              </div>
+              <ChevronRight size={16} style={{ color: '#F59E0B' }} />
+            </button>
+          </div>
+        )}
+
+        {/* Dirección */}
+        <div className="mx-5 mt-4 bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-5 pt-5 pb-3">
+            <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">DIRECCIÓN DE ENVÍO</p>
+            <div className="space-y-1">
+              {[
+                `${BODEGA_INFO.contacto} · ${codigo}`,
+                BODEGA_INFO.calle, BODEGA_INFO.barrio, BODEGA_INFO.ciudad, BODEGA_INFO.pais, BODEGA_INFO.telefono,
+              ].map((line, i) => (
+                <p key={i} className={`text-sm ${i === 0 ? 'font-semibold text-slate-800' : 'text-slate-500'}`}>
+                  {line}
+                </p>
+              ))}
             </div>
-            <ChevronRight size={16} style={{ color: '#F59E0B' }} />
+          </div>
+          <button onClick={handleCopy}
+            className="w-full flex items-center justify-center gap-2 py-4
+              border-t border-slate-100 text-sm font-semibold active:scale-95"
+            style={{ color: '#1565C0' }}>
+            <Copy size={16} /> Copiar dirección
           </button>
         </div>
-      )}
 
-      {/* Dirección */}
-      <div className="mx-5 mt-4 bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 pt-5 pb-3">
-          <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">DIRECCIÓN DE ENVÍO</p>
-          <div className="space-y-1">
-            {[
-              `${BODEGA_INFO.contacto} · ${codigo}`,
-              BODEGA_INFO.calle, BODEGA_INFO.ciudad, BODEGA_INFO.pais, BODEGA_INFO.telefono,
-            ].map((line, i) => (
-              <p key={i} className={`text-sm ${i === 0 ? 'font-semibold text-slate-800' : 'text-slate-500'}`}>
-                {line}
-              </p>
-            ))}
-          </div>
-        </div>
-        <button onClick={handleCopy}
-          className="w-full flex items-center justify-center gap-2 py-4
-            border-t border-slate-100 text-sm font-semibold active:scale-95"
-          style={{ color: '#1565C0' }}>
-          <Copy size={16} /> Copiar dirección
-        </button>
-      </div>
-
-      {/* Instrucciones */}
-      <div className="mx-5 mt-4 bg-white rounded-2xl shadow-sm p-5">
-        <p className="text-xs font-semibold text-slate-400 tracking-wider mb-4">CÓMO COMPRAR</p>
-        {[
-          { n:'1', title:'Copia la dirección', desc:'Pégala tal cual en la tienda (Amazon, Shein, Temu) al momento de pagar.' },
-          { n:'2', title:`Deja tu código`, desc:`Sin el ${codigo} no sabemos de quién es el paquete cuando llega.` },
-          { n:'3', title:'Te avisamos', desc:'Cuando llegue a la bodega recibirás una notificación con la foto y el precio.' },
-        ].map(({ n, title, desc }) => (
-          <div key={n} className="flex gap-4 mb-4 last:mb-0">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center
-              flex-shrink-0 text-white text-xs font-bold mt-0.5"
-              style={{ background: '#1565C0' }}>{n}</div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800 mb-0.5">{title}</p>
-              <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+        {/* Instrucciones */}
+        <div className="mx-5 mt-4 bg-white rounded-2xl shadow-sm p-5">
+          <p className="text-xs font-semibold text-slate-400 tracking-wider mb-4">CÓMO COMPRAR</p>
+          {[
+            { n:'1', title:'Copia la dirección', desc:'Pégala tal cual en la tienda (Amazon, Shein, Temu) al momento de pagar.' },
+            { n:'2', title:`Deja tu código`, desc:`Sin el ${codigo} no sabemos de quién es el paquete cuando llega.` },
+            { n:'3', title:'Te avisamos', desc:'Cuando llegue a la bodega recibirás una notificación con la foto y el precio.' },
+          ].map(({ n, title, desc }) => (
+            <div key={n} className="flex gap-4 mb-4 last:mb-0">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center
+                flex-shrink-0 text-white text-xs font-bold mt-0.5"
+                style={{ background: '#1565C0' }}>{n}</div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800 mb-0.5">{title}</p>
+                <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* Acceso rápido */}
-      <div className="mx-5 mt-4">
-        <button onClick={() => navigate('/cliente/paquetes')}
-          className="w-full bg-white rounded-2xl shadow-sm px-5 py-4
-            flex items-center justify-between active:scale-95 transition">
-          <div>
-            <p className="text-sm font-semibold text-slate-800">Ver mis paquetes</p>
-            <p className="text-xs text-slate-400 mt-0.5">Estado y seguimiento</p>
-          </div>
-          <ChevronRight size={20} className="text-slate-300" />
-        </button>
-      </div>
+        {/* Acceso rápido */}
+        <div className="mx-5 mt-4">
+          <button onClick={() => navigate('/cliente/paquetes')}
+            className="w-full bg-white rounded-2xl shadow-sm px-5 py-4
+              flex items-center justify-between active:scale-95 transition">
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Ver mis paquetes</p>
+              <p className="text-xs text-slate-400 mt-0.5">Estado y seguimiento</p>
+            </div>
+            <ChevronRight size={20} className="text-slate-300" />
+          </button>
+        </div>
+
+        {/* Botón WhatsApp de contacto */}
+        <div className="mx-5 mt-3">
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-4
+              rounded-2xl text-white font-semibold text-sm active:scale-95 transition"
+            style={{ background: '#25D366' }}
+          >
+            <MessageCircle size={18} />
+            Contactar a Los Líderes
+          </a>
+        </div>
+
       </div>
     </ClienteLayout>
   )

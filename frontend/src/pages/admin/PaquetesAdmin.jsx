@@ -10,6 +10,7 @@ import AdminLayout from '../../components/layout/AdminLayout'
 import EstadoBadge from '../../components/ui/EstadoBadge'
 import Modal from '../../components/ui/Modal'
 import Toast from '../../components/ui/Toast'
+import ImageViewer from '../../components/ui/ImageViewer'
 
 const FILTROS = [
   { label: 'Todos',      value: null           },
@@ -63,10 +64,10 @@ export default function PaquetesAdmin() {
   const [metodoPago, setMetodoPago] = useState('Efectivo')
   const [montoCobrado, setMontoCobrado] = useState('')
   const [toast,    setToast]    = useState({ show: false, msg: '', type: 'success' })
+  const [visorSrc, setVisorSrc] = useState(null)  // ← visor imagen
 
   const { data: paquetes = [], isLoading } = usePaquetesAdmin(filtro)
 
-  // Búsqueda local por código interno (ENC) o tracking del courier
   const q = busqueda.trim().toLowerCase()
   const paquetesFiltrados = q
     ? paquetes.filter(p =>
@@ -103,7 +104,6 @@ export default function PaquetesAdmin() {
     setModal(p)
   }
 
-  // Datos del cliente — siempre disponibles desde la vista
   const clienteNombre   = modal?.cliente_nombre    ?? modal?.perfiles?.nombre            ?? '—'
   const clienteTelefono = modal?.cliente_telefono  ?? modal?.perfiles?.telefono          ?? ''
   const clienteCodigo   = modal?.cliente_codigo    ?? modal?.perfiles?.codigo_casillero  ?? '—'
@@ -113,7 +113,6 @@ export default function PaquetesAdmin() {
 
   const handleTarifar = async () => {
     if (!modal) return
-    // Validaciones: método obligatorio; monto obligatorio si es otro conductor
     if (!metodoTarifa) {
       setToast({ show: true, msg: 'Selecciona el método de pago', type: 'error' })
       return
@@ -129,7 +128,7 @@ export default function PaquetesAdmin() {
         precio_sugerido: sugerido,
         precio_final:    parseFloat(precio),
         fecha_estimada:  fechaEst || null,
-        conductor_id:    conductorSel || user.id,   // sin selección → admin es el conductor
+        conductor_id:    conductorSel || user.id,
         monto_traslado:  esOtroConductor ? (parseFloat(montoTraslado) || 0) : 0,
         metodo_pago:     metodoTarifa,
         anteriorEstado:  modal.estado,
@@ -163,7 +162,12 @@ export default function PaquetesAdmin() {
       <Toast message={toast.msg} show={toast.show} type={toast.type}
         onHide={() => setToast(t => ({ ...t, show: false }))} />
 
-      {/* ── Buscador por tracking / ENC / cliente ── */}
+      {/* Visor de imagen a pantalla completa */}
+      {visorSrc && (
+        <ImageViewer src={visorSrc} onClose={() => setVisorSrc(null)} />
+      )}
+
+      {/* ── Buscador ── */}
       <div className="px-5 pt-4 pb-1">
         <div className="relative">
           <Search size={16}
@@ -252,16 +256,27 @@ export default function PaquetesAdmin() {
         ))}
       </div>
 
-      {/* ── Modal pantalla completa ── */}
+      {/* ── Modal ── */}
       {modal && (
         <Modal open={!!modal} onClose={() => setModal(null)}
           title={modal.codigo}>
 
-          {/* Foto */}
+          {/* Foto — clickeable para expandir */}
           {modal.foto_url && (
-            <div className="w-full h-44 rounded-2xl overflow-hidden mb-4 bg-slate-100">
+            <button
+              onClick={() => setVisorSrc(modal.foto_url)}
+              className="w-full h-44 rounded-2xl overflow-hidden mb-4 bg-slate-100
+                active:opacity-90 transition relative group"
+            >
               <img src={modal.foto_url} className="w-full h-full object-cover" />
-            </div>
+              {/* Hint visual */}
+              <div className="absolute inset-0 flex items-center justify-center
+                opacity-0 group-active:opacity-100 transition"
+                style={{ background: 'rgba(0,0,0,0.25)' }}>
+                <span className="text-white text-xs font-semibold bg-black/50
+                  px-3 py-1 rounded-full">Ver imagen</span>
+              </div>
+            </button>
           )}
 
           {/* Estado */}
@@ -269,7 +284,7 @@ export default function PaquetesAdmin() {
             <EstadoBadge estado={modal.estado} size="md" />
           </div>
 
-          {/* Códigos: tracking del courier + interno */}
+          {/* Códigos */}
           <div className="bg-white rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
             <div className="min-w-0">
               <p className="text-xs text-slate-400">
@@ -287,7 +302,7 @@ export default function PaquetesAdmin() {
             )}
           </div>
 
-          {/* ── CLIENTE — siempre visible ── */}
+          {/* ── CLIENTE ── */}
           <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
             CLIENTE
           </p>
@@ -295,7 +310,6 @@ export default function PaquetesAdmin() {
             <InfoCard icon={User}    label="Nombre"    value={clienteNombre} />
             <InfoCard icon={Package} label="Casillero" value={clienteCodigo} />
 
-            {/* Teléfono clickeable para llamar */}
             {clienteTelefono && (
               <a href={`tel:${clienteTelefono}`}
                 className="flex items-start gap-3 bg-white rounded-xl px-4 py-3
@@ -313,7 +327,6 @@ export default function PaquetesAdmin() {
               </a>
             )}
 
-            {/* Dirección de entrega + botón de mapa */}
             {clienteDireccion && (
               <div className="bg-white rounded-xl overflow-hidden">
                 <div className="flex items-start gap-3 px-4 py-3">
@@ -338,7 +351,6 @@ export default function PaquetesAdmin() {
               </div>
             )}
 
-            {/* Botón WhatsApp del cliente */}
             {clienteTelefono && (
               <a href={whatsappUrl(clienteTelefono,
                   `Hola ${clienteNombre}, te escribimos de Los Líderes Encomiendas sobre tu paquete ${modal.codigo}. 📦`
@@ -352,7 +364,7 @@ export default function PaquetesAdmin() {
             )}
           </div>
 
-          {/* ── DATOS DEL PAQUETE — siempre visible ── */}
+          {/* ── DATOS DEL PAQUETE ── */}
           <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
             PAQUETE
           </p>
@@ -386,7 +398,7 @@ export default function PaquetesAdmin() {
             </div>
           </div>
 
-          {/* ── TARIFAR (estado RECIBIDO) ── */}
+          {/* ── TARIFAR (RECIBIDO) ── */}
           {modal.estado === 'RECIBIDO' && (
             <>
               <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
@@ -413,7 +425,6 @@ export default function PaquetesAdmin() {
                   </div>
                 </div>
 
-                {/* Método de pago — obligatorio */}
                 <div className="bg-white rounded-xl p-4">
                   <p className="text-xs text-slate-400 mb-2">Método de pago del cliente *</p>
                   <div className="grid grid-cols-2 gap-2">
@@ -457,7 +468,6 @@ export default function PaquetesAdmin() {
                   </p>
                 </div>
 
-                {/* Monto de traslado — solo si es OTRO conductor */}
                 {esOtroConductor && (
                   <div className="bg-white rounded-xl p-4">
                     <p className="text-xs text-slate-400 mb-1">
@@ -544,7 +554,6 @@ export default function PaquetesAdmin() {
                   </div>
                 )}
 
-                {/* Admin puede marcar entregado directamente */}
                 {['EN_TRANSITO','EN_REPARTO'].includes(modal.estado) && (
                   <div className="pt-2 space-y-3">
                     <p className="text-xs font-semibold text-slate-400 tracking-wider">

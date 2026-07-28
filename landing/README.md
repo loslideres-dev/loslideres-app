@@ -1,11 +1,22 @@
 # Los Líderes Encomiendas — Landing comercial
 
-Página web pública (vitrina) de Los Líderes Encomiendas. Proyecto **Vite + React independiente**, listo para desplegar en Railway como un **segundo servicio**, separado de la PWA operativa.
+Página web pública (vitrina) de Los Líderes Encomiendas. Proyecto **Vite + React independiente**, desplegado en Railway como un segundo servicio separado de la app operativa.
 
 - **Web comercial** (este proyecto): atrae y convence → enlaza a la app.
-- **App / PWA** (tu proyecto actual `frontend/`): login, roles, rastreo, operación.
+- **App / PWA** (`frontend/`): login, roles, rastreo, operación.
 
 Build verificado con Vite ✅ · Sirve con `serve -s dist` ✅ · Responsive desktop + móvil ✅
+
+---
+
+## URLs en producción
+
+| Servicio | URL |
+|----------|-----|
+| **Landing** | https://www.loslideresencomiendas.com |
+| **App** | https://app.loslideresencomiendas.com |
+| **Respaldo landing** | https://loslideres-landing-production.up.railway.app |
+| **Respaldo app** | https://loslideres-app-production.up.railway.app |
 
 ---
 
@@ -14,24 +25,26 @@ Build verificado con Vite ✅ · Sirve con `serve -s dist` ✅ · Responsive des
 ```
 landing/
 ├── public/
-│   ├── hero.jpg          hero desktop (1600px, ~145KB)
-│   ├── hero-mob.jpg      hero móvil (900px, ~89KB)
-│   ├── logo-full.png     logo completo limpio (sin barra de paleta)
-│   └── iconos-mini.png   favicon
+│   ├── hero.jpg           hero desktop (1600px, ~145KB)
+│   ├── hero-mob.jpg       hero móvil (900px, ~89KB)
+│   ├── logo-full.png      logo completo limpio (sin barra de paleta)
+│   ├── iconos-mini.png    favicon
+│   ├── AMAZON.png         logo Amazon (barra de tiendas)
+│   ├── SHEIN.png          logo Shein (barra de tiendas)
+│   ├── TEMU.png           logo Temu (barra de tiendas)
+│   └── MERCADOLIBRE.png   logo MercadoLibre (barra de tiendas)
 ├── src/
-│   ├── Landing.jsx       componente principal
-│   ├── landing.css       estilos (paleta + tipografías de marca)
-│   └── main.jsx          entry point
-├── index.html            fuentes, favicon, meta SEO/OpenGraph
+│   ├── Landing.jsx        componente principal
+│   ├── landing.css        estilos (paleta + tipografías de marca)
+│   └── main.jsx           entry point
+├── index.html             fuentes, favicon, meta SEO/OpenGraph
 ├── vite.config.js
-├── package.json          serve está en dependencies (lo necesita Railway)
-├── nixpacks.toml         Node 20 + npm ci + npm run build
-├── railway.json          startCommand: serve -s dist -l $PORT
+├── package.json           serve está en dependencies (lo necesita Railway)
+├── nixpacks.toml          Node 20 + npm ci + npm run build
+├── railway.json           startCommand: serve -s dist -l $PORT
 ├── .env.example
 └── .gitignore
 ```
-
-Mismo patrón de build/deploy que tu `frontend/`, para que no aprendas nada nuevo.
 
 ---
 
@@ -52,63 +65,109 @@ npm run build && npm run preview
 
 ---
 
-## Despliegue en Railway (piloto)
+## Variables de entorno
 
-La landing es un **servicio nuevo** dentro del mismo repo. No toca tu app.
+Configuradas en Railway → servicio `loslideres-landing` → Variables. Las `VITE_*` se compilan en el build — si las cambias, hay que redesplegar.
 
-1. Copia esta carpeta `landing/` a la raíz de tu repo `loslideres-app/`, junto a `frontend/`.
-2. `git add . && git commit -m "feat: landing comercial" && git push origin main`
-3. En Railway, dentro del **mismo proyecto**: **New → GitHub Repo** (el mismo repo).
-4. En el nuevo servicio → **Settings**:
-   - **Root Directory**: `landing`
-   - **Service Name**: `loslideres-landing` (define la URL)
-5. **Settings → Networking → Generate Domain**. Queda algo como:
-   `https://loslideres-landing-production.up.railway.app`
-6. **Variables** (Settings → Variables) — pega las de `.env.example`:
-
-| Variable | Valor piloto |
-|----------|--------------|
-| `VITE_APP_URL` | `https://loslideres-app-production.up.railway.app` |
-| `VITE_TRACK_PATH` | `/rastreo` *(ajusta a tu ruta real)* |
-| `VITE_LOGIN_PATH` | `/login` |
-| `VITE_REGISTER_PATH` | `/registro` |
-| `VITE_WHATSAPP` | tu número (código país + número, sin `+`) |
-| `VITE_EMAIL` | tu correo de contacto |
-
-> Las `VITE_*` se compilan en el build, así que si las cambias, Railway redespliega solo (o usa **Redeploy**).
-
-### Las 2 URLs del piloto
-
-| | URL |
-|-|-----|
-| **Web comercial** | `https://loslideres-landing-production.up.railway.app` |
-| **App / PWA** | `https://loslideres-app-production.up.railway.app` |
+| Variable | Valor actual |
+|----------|-------------|
+| `VITE_APP_URL` | `https://app.loslideresencomiendas.com` |
+| `VITE_WHATSAPP` | `584246282123` (código país + número, sin `+`) |
+| `VITE_EMAIL` | `loslideresencomiendas@gmail.com` |
+| `VITE_SUPABASE_URL` | `https://kcmasyggaaclpkojohky.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | `<anon key>` |
 
 ---
 
-## Cuando compres el dominio
+## Dominio — loslideresencomiendas.com
 
-No cambia la arquitectura. En Railway → cada servicio → **Settings → Domains → Custom Domain**:
+Dominio registrado en **GoDaddy**. También se posee `loslideresencomienda.com` (sin s) que redirige al principal.
 
-- `loslideresencomiendas.com` → servicio **landing**
-- `app.loslideresencomiendas.com` → servicio **app**
+### Registros DNS en GoDaddy
 
-Y en las variables de la landing, cambia:
-`VITE_APP_URL = https://app.loslideresencomiendas.com`
+| Tipo | Nombre | Valor | TTL |
+|------|--------|-------|-----|
+| CNAME | `www` | `lx5hlmpw.up.railway.app` | 1/2 hora |
+| CNAME | `app` | `k1c5bz8k.up.railway.app` | 1/2 hora |
+| TXT | `_railway-verify.www` | `railway-verify=bcd28fd46e5863183e48bdd4766511a676d14ac67276d9de152f2d34bd90733f` | 1 hora |
+| TXT | `_railway-verify.app` | `railway-verify=a4ffb641be2a02f8bfb72bac753a784cb8bbe4380a47a54a04d80d98094df220` | 1 hora |
+| MX | `@` | `mx1.improvmx.com` (prioridad 10) | 1 hora |
+| MX | `@` | `mx2.improvmx.com` (prioridad 20) | 1 hora |
+| TXT | `@` | `v=spf1 include:spf.improvmx.com ~all` | 1 hora |
 
-Eso es todo.
+> ⚠️ Los valores CNAME de Railway pueden cambiar si se elimina y re-agrega el dominio en Railway. Si hay que reconfigurar, verificar los valores actuales en Railway → Settings → Networking → Custom Domain → DNS records.
+
+### Reenvío del raíz
+
+En GoDaddy → DNS → Reenvío → Dominio:
+- `loslideresencomiendas.com` → `https://www.loslideresencomiendas.com` (301 Permanente)
+
+### Dominio sin s (`loslideresencomienda.com`)
+
+Solo tiene reenvío configurado:
+- `loslideresencomienda.com` → `https://www.loslideresencomiendas.com` (301 Permanente)
+- No tiene registros de Railway propios.
 
 ---
 
-## Pendiente de tu lado (antes de publicar)
+## Correo — ImprovMX
 
-- [ ] Poner el **número de WhatsApp real** en `VITE_WHATSAPP`.
-- [ ] Confirmar la **ruta de rastreo** de tu PWA y cómo espera la guía (query `?guia=`), y ajustar `VITE_TRACK_PATH`.
-- [ ] Reemplazar los **testimonios de ejemplo** por reseñas reales.
-- [ ] (Opcional) Mostrar precios reales en Tarifas desde `config_negocio`.
+Correo `info@loslideresencomiendas.com` configurado con **ImprovMX** (plan gratuito). Reenvía a `loslideresencomiendas@gmail.com`.
+
+- Panel: https://improvmx.com
+- Los registros MX y SPF ya están en GoDaddy (ver tabla arriba).
+- Para agregar más alias: ImprovMX → Aliases → Add alias.
+
+---
+
+## Deploy en Railway
+
+La landing corre como servicio `loslideres-landing` en el mismo proyecto Railway que la app.
+
+- **Plan:** Hobby ($5 USD/mes) — necesario para custom domains sin límite.
+- **Root Directory:** `landing`
+- **Build:** `nixpacks.toml` (Node 20 + `npm ci` + `npm run build`)
+- **Start:** `serve -s dist -l $PORT` (definido en `railway.json`)
+- **Deploy automático:** cada `git push origin main` dispara build y despliegue.
+
+### Supabase — URLs de callback
+
+En Supabase → Authentication → URL Configuration → Redirect URLs deben estar:
+```
+https://app.loslideresencomiendas.com/auth/callback
+https://loslideres-app-production.up.railway.app/auth/callback
+http://localhost:5173/auth/callback
+```
+
+---
+
+## Si el dominio necesita reconfigurarse
+
+Si por alguna razón hay que volver a configurar el dominio en Railway desde cero:
+
+1. Railway → servicio → Settings → Networking → elimina el custom domain.
+2. Agrega de nuevo con **+ Custom Domain** → escribe `www.loslideresencomiendas.com`.
+3. Railway mostrará nuevos valores CNAME y TXT.
+4. Actualiza **solo los registros que cambiaron** en GoDaddy (normalmente solo el CNAME `www`).
+5. El TXT `_railway-verify.www` generalmente no cambia — verificar antes de editar.
+6. Esperar propagación (5–30 min). Verificar en https://dnschecker.org.
+
+> No borrar y re-agregar el dominio innecesariamente — cada vez Railway puede generar un nuevo CNAME.
+
+---
 
 ## Notas de marca
 
-- La landing usa **CSS plano, sin Tailwind** — más liviana y no depende de tu config de Tailwind 4.
-- El logo del header es una versión limpia de `full_iconos_.png` (sin la barra de colores del brand board). Tu archivo original queda intacto.
-- Paleta: navy `#0D2B5E` · azul `#1565C0` · cielo `#4FC3F7` · blanco. Tipos: Archivo, IBM Plex Sans, IBM Plex Mono.
+- La landing usa **CSS plano, sin Tailwind** — más liviana y no depende de la config de Tailwind 4 del frontend.
+- Paleta: navy `#0D2B5E` · azul `#1565C0` · cielo `#4FC3F7` · blanco · verde entregado `#1B7A3E`.
+- Tipografías: Archivo (títulos), IBM Plex Sans (texto), IBM Plex Mono (datos/códigos).
+- Los logos de tiendas (`AMAZON.png`, `SHEIN.png`, `TEMU.png`, `MERCADOLIBRE.png`) van en `public/` — nombres en mayúsculas, Linux distingue mayúsculas/minúsculas en producción.
+
+---
+
+## Pendientes
+
+- [ ] Reemplazar testimonios de ejemplo por reseñas reales.
+- [ ] (Opcional) Mostrar precios reales en Tarifas desde `config_negocio` via RPC.
+- [ ] PWA instalable (resuelve dark mode Samsung + habilita push real).
+- [ ] Dominio propio con SSL en el raíz sin GoDaddy forwarding (requiere mover DNS a Cloudflare).

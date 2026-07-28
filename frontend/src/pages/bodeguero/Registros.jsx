@@ -14,6 +14,7 @@ import BodegueroLayout from '../../components/layout/BodegueroLayout'
 import EstadoBadge from '../../components/ui/EstadoBadge'
 import Modal from '../../components/ui/Modal'
 import Toast from '../../components/ui/Toast'
+import ImageViewer from '../../components/ui/ImageViewer'
 
 const MAX_KB = 300
 
@@ -30,7 +31,7 @@ export default function Registros() {
   const { user } = useAuthStore()
   const { data: paquetes = [], isLoading, refetch } = usePaquetesHoy(user?.id)
 
-  const [detalle, setDetalle] = useState(null)   // paquete seleccionado
+  const [detalle, setDetalle] = useState(null)
   const [toast,   setToast]   = useState({ show: false, msg: '', type: 'success' })
 
   return (
@@ -38,7 +39,7 @@ export default function Registros() {
       <Toast message={toast.msg} show={toast.show} type={toast.type}
         onHide={() => setToast(t => ({ ...t, show: false }))} />
 
-      {/* Contador (fijo arriba mientras scrollea la lista) */}
+      {/* Contador */}
       <div className="sticky top-0 z-10 px-5 pt-4 pb-3" style={{ background: '#F4F6FA' }}>
         <div className="rounded-2xl p-5 flex items-center justify-between"
           style={{ background: '#1565C0' }}>
@@ -119,7 +120,6 @@ export default function Registros() {
         </div>
       </div>
 
-      {/* Modal de detalle / edición */}
       {detalle && (
         <DetalleRegistro
           paquete={detalle}
@@ -132,11 +132,12 @@ export default function Registros() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modal de detalle con edición y eliminación (solo si estado === RECIBIDO)
+// Modal de detalle con edición y eliminación
 // ─────────────────────────────────────────────────────────────────────────────
 function DetalleRegistro({ paquete, onClose, onToast }) {
   const editable = paquete.estado === 'RECIBIDO'
-  const [modo, setModo] = useState('ver')   // 'ver' | 'editar' | 'eliminar'
+  const [modo, setModo] = useState('ver')
+  const [visorSrc, setVisorSrc] = useState(null)  // ← visor imagen
 
   const { mutateAsync: actualizar, isPending: guardando } = useActualizarPaquete()
   const { mutateAsync: eliminar,   isPending: eliminando } = useEliminarPaquete()
@@ -154,7 +155,6 @@ function DetalleRegistro({ paquete, onClose, onToast }) {
   })
   const [tamanioManual, setTamanioManual] = useState(true)
 
-  // Foto
   const [fotoBlob,    setFotoBlob]    = useState(null)
   const [fotoPreview, setFotoPreview] = useState(paquete.foto_url ?? null)
   const [fotoKB,      setFotoKB]      = useState(null)
@@ -190,7 +190,6 @@ function DetalleRegistro({ paquete, onClose, onToast }) {
   const handleGuardar = async () => {
     try {
       let foto_url = paquete.foto_url
-      // Si cambió la foto, subir la nueva
       if (fotoBlob) {
         const path = `paq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`
         const { error: errUp } = await supabase.storage
@@ -233,202 +232,220 @@ function DetalleRegistro({ paquete, onClose, onToast }) {
   }
 
   return (
-    <Modal open onClose={onClose} title={paquete.codigo}>
-
-      {/* ---- MODO ELIMINAR (confirmación) ---- */}
-      {modo === 'eliminar' && (
-        <div className="text-center py-6">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ background: '#FEE2E2' }}>
-            <AlertTriangle size={30} style={{ color: '#DC2626' }} />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800 mb-1">¿Eliminar registro?</h3>
-          <p className="text-sm text-slate-500 mb-6 px-4">
-            Se eliminará el paquete <span className="font-mono font-semibold">{paquete.codigo}</span>.
-            Esta acción no se puede deshacer.
-          </p>
-          <div className="space-y-2">
-            <button onClick={handleEliminar} disabled={eliminando}
-              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm
-                flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
-              style={{ background: '#DC2626' }}>
-              {eliminando ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-              Sí, eliminar
-            </button>
-            <button onClick={() => setModo('ver')}
-              className="w-full py-3.5 rounded-xl font-semibold text-sm border border-slate-200
-                text-slate-600 active:scale-95">
-              Cancelar
-            </button>
-          </div>
-        </div>
+    <>
+      {/* Visor de imagen a pantalla completa */}
+      {visorSrc && (
+        <ImageViewer src={visorSrc} onClose={() => setVisorSrc(null)} />
       )}
 
-      {/* ---- MODO VER ---- */}
-      {modo === 'ver' && (
-        <div className="space-y-4">
-          {paquete.foto_url && (
-            <img src={paquete.foto_url} alt="" className="w-full h-52 object-cover rounded-xl" />
-          )}
+      <Modal open onClose={onClose} title={paquete.codigo}>
 
-          <div className="flex items-center justify-between">
-            <EstadoBadge estado={paquete.estado} />
-            <span className="text-xs text-slate-400">
-              {paquete.cliente_nombre ?? paquete.perfiles?.nombre}
-              {' · '}
-              {paquete.cliente_codigo ?? paquete.perfiles?.codigo_casillero}
-            </span>
-          </div>
-
-          {paquete.tracking_externo && (
-            <Dato label="Tracking del courier" valor={paquete.tracking_externo} />
-          )}
-
-          <div className="grid grid-cols-2 gap-2">
-            <Dato label="Descripción" valor={paquete.descripcion || '—'} />
-            <Dato label="Tienda" valor={paquete.tienda || '—'} />
-            <Dato label="Medidas" valor={
-              [paquete.largo_cm, paquete.ancho_cm, paquete.alto_cm].filter(Boolean).join('×') +
-              (paquete.largo_cm ? ' cm' : '—')} />
-            <Dato label="Peso" valor={paquete.peso_kg ? `${paquete.peso_kg} kg` : '—'} />
-            <Dato label="Tamaño" valor={paquete.tamanio || '—'} />
-            <Dato label="Recibido" valor={
-              new Date(paquete.fecha_recepcion).toLocaleDateString('es-VE',
-                { day: 'numeric', month: 'short' })} />
-          </div>
-
-          {paquete.observaciones && (
-            <Dato label="Observaciones" valor={paquete.observaciones} />
-          )}
-
-          {editable ? (
-            <div className="space-y-2 pt-2">
-              <button onClick={() => setModo('editar')}
+        {/* ---- MODO ELIMINAR ---- */}
+        {modo === 'eliminar' && (
+          <div className="text-center py-6">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: '#FEE2E2' }}>
+              <AlertTriangle size={30} style={{ color: '#DC2626' }} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 mb-1">¿Eliminar registro?</h3>
+            <p className="text-sm text-slate-500 mb-6 px-4">
+              Se eliminará el paquete <span className="font-mono font-semibold">{paquete.codigo}</span>.
+              Esta acción no se puede deshacer.
+            </p>
+            <div className="space-y-2">
+              <button onClick={handleEliminar} disabled={eliminando}
                 className="w-full py-3.5 rounded-xl text-white font-semibold text-sm
-                  flex items-center justify-center gap-2 active:scale-95"
-                style={{ background: '#1565C0' }}>
-                <Pencil size={17} /> Editar registro
+                  flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                style={{ background: '#DC2626' }}>
+                {eliminando ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                Sí, eliminar
               </button>
-              <button onClick={() => setModo('eliminar')}
-                className="w-full py-3.5 rounded-xl font-semibold text-sm border-2
-                  flex items-center justify-center gap-2 active:scale-95"
-                style={{ borderColor: '#FCA5A5', color: '#DC2626' }}>
-                <Trash2 size={17} /> Eliminar registro
+              <button onClick={() => setModo('ver')}
+                className="w-full py-3.5 rounded-xl font-semibold text-sm border border-slate-200
+                  text-slate-600 active:scale-95">
+                Cancelar
               </button>
             </div>
-          ) : (
-            <div className="rounded-xl px-4 py-3 text-center" style={{ background: '#EEF2F8' }}>
-              <p className="text-xs" style={{ color: '#1565C0' }}>
-                Este paquete ya avanzó de estado. Solo se puede editar o eliminar
-                mientras está "Recibido en bodega".
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* ---- MODO EDITAR ---- */}
-      {modo === 'editar' && (
-        <div className="space-y-4">
-          <input ref={camRef} type="file" accept="image/*" capture="environment"
-            className="hidden" onChange={handleFoto} />
-          <input ref={galRef} type="file" accept="image/*" className="hidden" onChange={handleFoto} />
-
-          {/* Foto */}
-          <div>
-            <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">FOTO</p>
-            {fotoPreview && (
-              <img src={fotoPreview} alt="" className="w-full h-44 object-cover rounded-xl mb-2" />
+        {/* ---- MODO VER ---- */}
+        {modo === 'ver' && (
+          <div className="space-y-4">
+            {/* Foto clickeable para expandir */}
+            {paquete.foto_url && (
+              <button
+                onClick={() => setVisorSrc(paquete.foto_url)}
+                className="w-full active:opacity-90 transition relative group"
+              >
+                <img src={paquete.foto_url} alt=""
+                  className="w-full h-52 object-cover rounded-xl" />
+                {/* Hint sutil en esquina */}
+                <span className="absolute bottom-2 right-2 text-white text-[10px]
+                  font-semibold px-2 py-0.5 rounded-full opacity-80"
+                  style={{ background: 'rgba(0,0,0,0.45)' }}>
+                  Toca para ampliar
+                </span>
+              </button>
             )}
+
+            <div className="flex items-center justify-between">
+              <EstadoBadge estado={paquete.estado} />
+              <span className="text-xs text-slate-400">
+                {paquete.cliente_nombre ?? paquete.perfiles?.nombre}
+                {' · '}
+                {paquete.cliente_codigo ?? paquete.perfiles?.codigo_casillero}
+              </span>
+            </div>
+
+            {paquete.tracking_externo && (
+              <Dato label="Tracking del courier" valor={paquete.tracking_externo} />
+            )}
+
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => camRef.current?.click()} disabled={procesando}
-                className="py-2.5 rounded-xl border-2 border-dashed border-slate-200 bg-white
-                  flex items-center justify-center gap-2 text-slate-500 text-xs font-medium
-                  active:scale-95 disabled:opacity-50">
-                {procesando ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-                Cambiar (cámara)
-              </button>
-              <button onClick={() => galRef.current?.click()} disabled={procesando}
-                className="py-2.5 rounded-xl border-2 border-dashed border-slate-200 bg-white
-                  flex items-center justify-center gap-2 text-slate-500 text-xs font-medium
-                  active:scale-95 disabled:opacity-50">
-                <ImageIcon size={16} /> Galería
-              </button>
+              <Dato label="Descripción" valor={paquete.descripcion || '—'} />
+              <Dato label="Tienda" valor={paquete.tienda || '—'} />
+              <Dato label="Medidas" valor={
+                [paquete.largo_cm, paquete.ancho_cm, paquete.alto_cm].filter(Boolean).join('×') +
+                (paquete.largo_cm ? ' cm' : '—')} />
+              <Dato label="Peso" valor={paquete.peso_kg ? `${paquete.peso_kg} kg` : '—'} />
+              <Dato label="Tamaño" valor={paquete.tamanio || '—'} />
+              <Dato label="Recibido" valor={
+                new Date(paquete.fecha_recepcion).toLocaleDateString('es-VE',
+                  { day: 'numeric', month: 'short' })} />
             </div>
-            {fotoKB != null && (
-              <p className="text-xs text-slate-400 mt-1">Nueva foto: {fotoKB} KB ✓</p>
+
+            {paquete.observaciones && (
+              <Dato label="Observaciones" valor={paquete.observaciones} />
+            )}
+
+            {editable ? (
+              <div className="space-y-2 pt-2">
+                <button onClick={() => setModo('editar')}
+                  className="w-full py-3.5 rounded-xl text-white font-semibold text-sm
+                    flex items-center justify-center gap-2 active:scale-95"
+                  style={{ background: '#1565C0' }}>
+                  <Pencil size={17} /> Editar registro
+                </button>
+                <button onClick={() => setModo('eliminar')}
+                  className="w-full py-3.5 rounded-xl font-semibold text-sm border-2
+                    flex items-center justify-center gap-2 active:scale-95"
+                  style={{ borderColor: '#FCA5A5', color: '#DC2626' }}>
+                  <Trash2 size={17} /> Eliminar registro
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-xl px-4 py-3 text-center" style={{ background: '#EEF2F8' }}>
+                <p className="text-xs" style={{ color: '#1565C0' }}>
+                  Este paquete ya avanzó de estado. Solo se puede editar o eliminar
+                  mientras está "Recibido en bodega".
+                </p>
+              </div>
             )}
           </div>
+        )}
 
-          {/* Datos */}
-          <div>
-            <input type="text" placeholder="Tracking del courier (opcional)"
-              value={form.tracking_externo}
-              autoCapitalize="characters"
-              onChange={e => setForm(f => ({ ...f, tracking_externo: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
-                font-mono outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <input type="text" placeholder="Descripción" value={form.descripcion}
-            onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
-              outline-none focus:ring-2 focus:ring-blue-500" />
-          <input type="text" placeholder="Tienda" value={form.tienda}
-            onChange={e => setForm(f => ({ ...f, tienda: e.target.value }))}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
-              outline-none focus:ring-2 focus:ring-blue-500" />
+        {/* ---- MODO EDITAR ---- */}
+        {modo === 'editar' && (
+          <div className="space-y-4">
+            <input ref={camRef} type="file" accept="image/*" capture="environment"
+              className="hidden" onChange={handleFoto} />
+            <input ref={galRef} type="file" accept="image/*" className="hidden" onChange={handleFoto} />
 
-          <div className="grid grid-cols-3 gap-2">
-            {[['largo_cm','Largo'],['ancho_cm','Ancho'],['alto_cm','Alto']].map(([k,l]) => (
-              <input key={k} type="number" inputMode="decimal" placeholder={l} value={form[k]}
-                onChange={e => setMedida(k, e.target.value)}
-                className="px-3 py-3 rounded-xl border border-slate-200 bg-white text-sm text-center
-                  outline-none focus:ring-2 focus:ring-blue-500" />
-            ))}
-          </div>
-          <input type="number" inputMode="decimal" placeholder="Peso (kg)" value={form.peso_kg}
-            onChange={e => setForm(f => ({ ...f, peso_kg: e.target.value }))}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
-              outline-none focus:ring-2 focus:ring-blue-500" />
-
-          <div>
-            <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">TAMAÑO</p>
-            <div className="grid grid-cols-4 gap-2">
-              {TAMANIOS.map(({ value }) => (
-                <button key={value}
-                  onClick={() => { setTamanioManual(true); setForm(f => ({ ...f, tamanio: value })) }}
-                  className={`py-3 rounded-xl text-sm font-bold border-2 transition active:scale-95
-                    ${form.tamanio === value ? 'text-white' : 'border-slate-200 text-slate-600 bg-white'}`}
-                  style={form.tamanio === value
-                    ? { background: '#1565C0', borderColor: '#1565C0' } : {}}>
-                  {value}
+            <div>
+              <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">FOTO</p>
+              {fotoPreview && (
+                <img src={fotoPreview} alt="" className="w-full h-44 object-cover rounded-xl mb-2" />
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => camRef.current?.click()} disabled={procesando}
+                  className="py-2.5 rounded-xl border-2 border-dashed border-slate-200 bg-white
+                    flex items-center justify-center gap-2 text-slate-500 text-xs font-medium
+                    active:scale-95 disabled:opacity-50">
+                  {procesando ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                  Cambiar (cámara)
                 </button>
+                <button onClick={() => galRef.current?.click()} disabled={procesando}
+                  className="py-2.5 rounded-xl border-2 border-dashed border-slate-200 bg-white
+                    flex items-center justify-center gap-2 text-slate-500 text-xs font-medium
+                    active:scale-95 disabled:opacity-50">
+                  <ImageIcon size={16} /> Galería
+                </button>
+              </div>
+              {fotoKB != null && (
+                <p className="text-xs text-slate-400 mt-1">Nueva foto: {fotoKB} KB ✓</p>
+              )}
+            </div>
+
+            <div>
+              <input type="text" placeholder="Tracking del courier (opcional)"
+                value={form.tracking_externo}
+                autoCapitalize="characters"
+                onChange={e => setForm(f => ({ ...f, tracking_externo: e.target.value }))}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
+                  font-mono outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <input type="text" placeholder="Descripción" value={form.descripcion}
+              onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
+                outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="text" placeholder="Tienda" value={form.tienda}
+              onChange={e => setForm(f => ({ ...f, tienda: e.target.value }))}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
+                outline-none focus:ring-2 focus:ring-blue-500" />
+
+            <div className="grid grid-cols-3 gap-2">
+              {[['largo_cm','Largo'],['ancho_cm','Ancho'],['alto_cm','Alto']].map(([k,l]) => (
+                <input key={k} type="number" inputMode="decimal" placeholder={l} value={form[k]}
+                  onChange={e => setMedida(k, e.target.value)}
+                  className="px-3 py-3 rounded-xl border border-slate-200 bg-white text-sm text-center
+                    outline-none focus:ring-2 focus:ring-blue-500" />
               ))}
             </div>
-          </div>
+            <input type="number" inputMode="decimal" placeholder="Peso (kg)" value={form.peso_kg}
+              onChange={e => setForm(f => ({ ...f, peso_kg: e.target.value }))}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
+                outline-none focus:ring-2 focus:ring-blue-500" />
 
-          <textarea placeholder="Observaciones" rows={2} value={form.observaciones}
-            onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
-              outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            <div>
+              <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">TAMAÑO</p>
+              <div className="grid grid-cols-4 gap-2">
+                {TAMANIOS.map(({ value }) => (
+                  <button key={value}
+                    onClick={() => { setTamanioManual(true); setForm(f => ({ ...f, tamanio: value })) }}
+                    className={`py-3 rounded-xl text-sm font-bold border-2 transition active:scale-95
+                      ${form.tamanio === value ? 'text-white' : 'border-slate-200 text-slate-600 bg-white'}`}
+                    style={form.tamanio === value
+                      ? { background: '#1565C0', borderColor: '#1565C0' } : {}}>
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div className="space-y-2 pt-1">
-            <button onClick={handleGuardar} disabled={guardando || procesando}
-              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm
-                flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
-              style={{ background: '#1565C0' }}>
-              {guardando ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-              Guardar cambios
-            </button>
-            <button onClick={() => setModo('ver')}
-              className="w-full py-3.5 rounded-xl font-semibold text-sm border border-slate-200
-                text-slate-600 active:scale-95 flex items-center justify-center gap-2">
-              <X size={16} /> Cancelar
-            </button>
+            <textarea placeholder="Observaciones" rows={2} value={form.observaciones}
+              onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm
+                outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+
+            <div className="space-y-2 pt-1">
+              <button onClick={handleGuardar} disabled={guardando || procesando}
+                className="w-full py-3.5 rounded-xl text-white font-semibold text-sm
+                  flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                style={{ background: '#1565C0' }}>
+                {guardando ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+                Guardar cambios
+              </button>
+              <button onClick={() => setModo('ver')}
+                className="w-full py-3.5 rounded-xl font-semibold text-sm border border-slate-200
+                  text-slate-600 active:scale-95 flex items-center justify-center gap-2">
+                <X size={16} /> Cancelar
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </Modal>
+        )}
+      </Modal>
+    </>
   )
 }
 
