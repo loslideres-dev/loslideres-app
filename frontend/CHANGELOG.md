@@ -1,135 +1,48 @@
 # Los Líderes Encomiendas · Changelog
 
 
-### [0.3.10](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.9...v0.3.10) (2026-07-27)
+## [0.4.0](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.10...v0.4.0) (2026-07-28)
 
 
 ### ✨ Nuevas funcionalidades
 
-* landing comercial (sitio público) ([c981761](https://github.com/loslideres-dev/loslideres-app/commit/c981761f05b82e171be2c250e2f6c3e18d3aafaa))
+* rastreo público de paquetes con Supabase (RPC segura + timeline) ([0d4b03a](https://github.com/loslideres-dev/loslideres-app/commit/0d4b03ab0defaed78f2fbc248d39c9a6bd397532))
 
+## [0.4.0] — 2026-07-27
+
+### ✨ Nuevas funcionalidades
+
+* **Tracking del courier** — el bodeguero registra el código externo (Amazon, Servientrega, etc.) al recibir el paquete. Se muestra como código principal en todas las vistas del cliente y conductor; el admin también ve ambos. Búsqueda por ENC o tracking en el panel del admin. Hook `useBuscarPaquete` listo para la página de rastreo público.
+* **Flujo de estados rediseñado** — el paso a EN_TRANSITO lo hace el **conductor** (botón "Poner en tránsito" al salir de Maicao). Se eliminó la pantalla de despachar del admin. El conductor ve tres botones según el estado: Poner en tránsito / Iniciar reparto / Marcar entregado.
+* **Método de pago al tarifar** — el admin define el método de pago del cliente al momento de tarifar (obligatorio). El conductor al entregar solo registra quién recibió; método y monto ya vienen definidos.
+* **Monto de traslado condicional** — al tarifar, el admin ve el campo de monto de traslado solo si asigna un conductor diferente a él mismo; si se asigna a sí mismo, no se pide monto.
+* **Mapa desde la asignación** — el conductor ve el mapa y la dirección desde que el paquete le es asignado (estado TARIFADO), no solo en reparto. Facilita la planificación de ruta.
+* **Reporte del negocio (admin)** — nueva pantalla de reportes con selector Hoy/Semana/Mes/Todo. Incluye: resumen financiero (ingresos, ganancia neta, pagos en USD separados de COP), operativo (estados, tamaños con gráfico), tendencia (paquetes por día, métodos de pago) y rankings (top conductores, bodegueros y clientes). Usa Recharts para los gráficos.
+* **Función RPC de rastreo público** — `rastrear_paquete(codigo)` en Supabase: devuelve solo estado y fechas, sin datos privados. Lista para la landing pública. Accesible sin login vía rol `anon`.
+* **Editar / eliminar registros del bodeguero** — en "Mis registros", las tarjetas son clickeables. Si el paquete está en RECIBIDO, el bodeguero puede editar todos los datos (incluida la foto) o eliminar con confirmación. Si ya avanzó de estado, solo puede ver.
+
+### 🔧 Mejoras
+
+* **Navbar del admin reorganizado** — se quitó Tarifas del navbar (ahora es un ícono de engranaje ⚙️ en el header, como "Configuración") y se agregó Reportes al final.
+* **Scroll fijo en todos los listados** — header y filtros quedan fijos en pantalla; solo la lista de paquetes/registros hace scroll. Aplicado a cliente, bodeguero, conductor y admin.
+* **Campanita de notificaciones en cliente** — NotifBell agregado al header de Casillero y Mis Paquetes.
+* **Navbar completo al admin en vista conductor** — cuando el admin entra a /conductor/entregas, el navbar muestra todas sus pestañas de admin (no desaparece el nav).
+* **Formulario de creación de usuario simplificado** — se quitaron teléfono y dirección del form (el cliente los completa en el onboarding). El form solo pide nombre, correo, contraseña y rol.
+* **Imágenes completas en las cards** — todas las miniaturas de las listas usan `object-contain` (la foto se ve completa de arriba a abajo, sin recorte).
+* **Notificaciones usan tracking** — cuando el cliente o conductor reciben una notificación, el mensaje muestra el tracking del courier si existe; si no, el código ENC. Las notificaciones a admins siempre usan el ENC interno.
+* **Modal no corta contenido** — z-index subido a `z-[60]` para quedar sobre el navbar; padding inferior con safe-area para que el contenido al final no quede tapado.
+* **Prefill en modal del admin** — al abrir el modal de un paquete ya tarifado, los campos de método de pago y monto del conductor se precargan con los valores existentes.
 
 ### 🐛 Correcciones
 
-* arco decorativo bloqueaba el toque en botones (pointer-events) ([d2cef97](https://github.com/loslideres-dev/loslideres-app/commit/d2cef976a4d3da730e47cb9322222b3336621570))
-* enlaces de app a la raíz, rastreo por WhatsApp temporal, contraste de botón en móvil ([7bf01d2](https://github.com/loslideres-dev/loslideres-app/commit/7bf01d2f3a43f0e0f3d47e82468d569f4cc51798))
-* notificaciones al cliente y conductor usan tracking del courier cuando existe ([c2f62fa](https://github.com/loslideres-dev/loslideres-app/commit/c2f62fa159c321001d18c95e4e641d27543deb4b))
+* Import duplicado de `BarChart3` en `ConductorLayout` que rompía el build de Railway.
+* El conductor ya no ve el selector de método de pago al entregar (era redundante, el admin lo define al tarifar).
+* Total cobrado a clientes eliminado del reporte del conductor (información confidencial del admin).
+* Trigger `handle_new_user` corregido: solo genera código de casillero (LID) para clientes; conductores, bodegueros y admins no reciben casillero. Limpieza de casilleros mal asignados a usuarios existentes.
 
-### [0.3.9](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.8...v0.3.9) (2026-07-25)
+### 🗄️ Base de datos (SQL ejecutados)
 
-
-### 🐛 Correcciones
-
-* quitar total cobrado a clientes del reporte del conductor (info confidencial) ([a56de80](https://github.com/loslideres-dev/loslideres-app/commit/a56de80f351cebea39e4c4d4f5446f53745b97dc))
-
-### [0.3.8](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.7...v0.3.8) (2026-07-25)
-
-
-### 🐛 Correcciones
-
-* import duplicado de BarChart3 en ConductorLayout ([72abacd](https://github.com/loslideres-dev/loslideres-app/commit/72abacd87438aa265534b04e05a3711d30f5107f))
-
-### [0.3.7](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.6...v0.3.7) (2026-07-25)
-
-
-### ✨ Nuevas funcionalidades
-
-* reporte del negocio para admin con metricas financieras, operativas, rankings y graficos ([5da3433](https://github.com/loslideres-dev/loslideres-app/commit/5da34339dbede19f2108e64a41041973f7992d73))
-
-### [0.3.6](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.5...v0.3.6) (2026-07-25)
-
-
-### 🐛 Correcciones
-
-* metodo de pago del cliente debajo del precio en tarifar ([8ece95b](https://github.com/loslideres-dev/loslideres-app/commit/8ece95befbff1bfdedaf0ae074908d1a09264ede))
-
-### [0.3.5](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.4...v0.3.5) (2026-07-25)
-
-
-### ✨ Nuevas funcionalidades
-
-* flujo de estados por conductor, metodo de pago en tarifado, form usuario simplificado, imagenes completas en cards ([734e268](https://github.com/loslideres-dev/loslideres-app/commit/734e2683a888832c8bc25967f95309835c9a6248))
-
-### [0.3.4](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.3...v0.3.4) (2026-07-25)
-
-
-### ✨ Nuevas funcionalidades
-
-* flujo de estados por conductor, metodo de pago en tarifado, form usuario simplificado, imagenes completas en cards ([045f86f](https://github.com/loslideres-dev/loslideres-app/commit/045f86f0ba275bca12a3690efa7f4b68e2aaf360))
-
-### [0.3.3](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.2...v0.3.3) (2026-07-25)
-
-
-### 🐛 Correcciones
-
-* navbar admin en entregas, scroll fijo en listados, campanita cliente, editar/eliminar registros bodeguero, modal y trigger de roles ([c1ee23e](https://github.com/loslideres-dev/loslideres-app/commit/c1ee23ee28b3be5a753c44f016e77a8545500b81))
-
-### [0.3.2](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.1...v0.3.2) (2026-07-25)
-
-
-### 📝 Documentación
-
-* README completo con stack, funcionalidades y arquitectura ([d3fb166](https://github.com/loslideres-dev/loslideres-app/commit/d3fb16652bec898ffab68cdfd9a3adc4bae15f32))
-
-### [0.3.1](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.0...v0.3.1) (2026-07-25)
-
-
-### ✨ Nuevas funcionalidades
-
-* versionado automatico visible en login ([572b076](https://github.com/loslideres-dev/loslideres-app/commit/572b076a4a665f9461ebe11c2125c85243541023))
-
-## [0.3.0](https://github.com/loslideres-dev/loslideres-app/compare/v0.2.1...v0.3.0) (2026-07-25)
-
-
-### ✨ Nuevas funcionalidades
-
-* notificaciones in-app, reportes conductor/bodeguero, modulo conductor, modal detalle usuario ([161dcb1](https://github.com/loslideres-dev/loslideres-app/commit/161dcb15730be04f615e1b0463700297b53e19ec))
-
-### [0.2.1](https://github.com/loslideres-dev/loslideres-app/compare/v0.0.2...v0.2.1) (2026-07-25)
-
-
-### 📝 Documentación
-
-* README, changelog y alineación a version 0.2.0 ([834c98b](https://github.com/loslideres-dev/loslideres-app/commit/834c98b8d7c058a804da1773680eace2c57f99f1))
-
-
-### 🔧 Mantenimiento
-
-* configuración de Railway para deploy ([9dd8831](https://github.com/loslideres-dev/loslideres-app/commit/9dd8831d4b825f08867d6783b2a7ade077fa0a06))
-
-
-### ✨ Nuevas funcionalidades
-
-* logo completo en login y título de pestaña ([03c55a3](https://github.com/loslideres-dev/loslideres-app/commit/03c55a34eda1b8b1ef30a0d9e29181b3d3d1261c))
-* tarifas por tamaño en lote y pago configurable al bodeguero ([67f85ae](https://github.com/loslideres-dev/loslideres-app/commit/67f85ae64b10423b8e8c3c4fa09641300129a235))
-
-
-### 🐛 Correcciones
-
-* auditoria sin join directo, tab Todos por defecto, modal cerrar al final ([b194df3](https://github.com/loslideres-dev/loslideres-app/commit/b194df339dbf0bb73aa296adc48fb5bfcf9c2128))
-* bloquear dark mode forzado en Samsung Internet ([34069d8](https://github.com/loslideres-dev/loslideres-app/commit/34069d8688363e7802e4d03a42faed6bfab638f1))
-* forzar modo claro para evitar inversión en dark mode ([f9fc641](https://github.com/loslideres-dev/loslideres-app/commit/f9fc641e4e81b0ea93ceb9cf8171c81aaeefae95))
-* forzar Node 20 para el build en Railway ([e3d2fb3](https://github.com/loslideres-dev/loslideres-app/commit/e3d2fb32bb004d566f3dd6debeef8f11103fa0a0))
-* mover serve a dependencies ([9899236](https://github.com/loslideres-dev/loslideres-app/commit/9899236bcecffc5353ad8e65fcc562510583e0ca))
-* railway build y start commands separados ([1c9be6b](https://github.com/loslideres-dev/loslideres-app/commit/1c9be6bd2a1f8b2938f88d8e7cb049288cbb8dc6))
-* separar start command en railway.json con puerto default ([89a6ab6](https://github.com/loslideres-dev/loslideres-app/commit/89a6ab69c6e9feeccf465650f77bc92ca25a8915))
-* splash screen sin box, fondo blanco con logo y animacion ([0585b9b](https://github.com/loslideres-dev/loslideres-app/commit/0585b9b5aa43f4cac583ab00790d17011b379355))
-* usar nixpacks.toml con npm ci limpio ([ca3ea9f](https://github.com/loslideres-dev/loslideres-app/commit/ca3ea9f1acd3121046b154d8a993f40419c8f579))
-
-### [0.0.2](https://github.com/loslideres-dev/loslideres-app/compare/v0.0.1...v0.0.2) (2026-07-24)
-
-### 0.0.1 (2026-07-24)
-
-
-### 🔧 Mantenimiento
-
-* estructura inicial del proyecto ([1c9856d](https://github.com/loslideres-dev/loslideres-app/commit/1c9856d593d83ce5961c2bdd7fd3bd632748ca55))
-
-
-### ✨ Nuevas funcionalidades
-
-* casillero del cliente con código LID y dirección de bodega ([0fc40c7](https://github.com/loslideres-dev/loslideres-app/commit/0fc40c792ba70c14094a5e73a32a597827a47e87))
-* MVP1 flujo completo - login, registro, onboarding, casillero, paquetes cliente, dashboard admin, tarifación, bodeguero ([8e9c966](https://github.com/loslideres-dev/loslideres-app/commit/8e9c966981e23f503d3440fefac4a3b43d9fa12d))
-* pantalla de login con email/password y Google OAuth ([8b698d8](https://github.com/loslideres-dev/loslideres-app/commit/8b698d88c32c9ac1f2dc1552c1f87ce3a09ca036))
-* pantalla mis paquetes con lista y filtros por estado ([41bd3e3](https://github.com/loslideres-dev/loslideres-app/commit/41bd3e397938192c7c3724db4fc9d6777e85d61c))
-* registro completo con email y Google OAuth, onboarding obligatorio con tour y perfil ([7e7b27b](https://github.com/loslideres-dev/loslideres-app/commit/7e7b27bbc5d8f9e63ae541bac984261b76d447a5))
+* `02_fix_trigger_roles.sql` — trigger corregido + limpieza de casilleros en no-clientes
+* `03_rls_bodeguero_editar.sql` — políticas RLS para UPDATE/DELETE del bodeguero en RECIBIDO
+* `05_tracking_externo.sql` — columna `tracking_externo` en `paquetes`, índice de búsqueda, vista `paquetes_con_cliente` recreada con el nuevo campo
+* `rastrear_paquete(TEXT)` — función RPC pública (GRANT EXECUTE TO anon)
