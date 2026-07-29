@@ -58,7 +58,7 @@ export default function ReporteAdmin() {
         .map(([k, v]) => ({ name: k, cantidad: v, color: TAM_COLOR[k] }))
     : []
   const metodoData = data
-    ? Object.entries(data.porMetodo).map(([k, v]) => ({ name: k, value: v }))
+    ? Object.values(data.porMetodo).sort((a, b) => b.cantidad - a.cantidad)
     : []
 
   return (
@@ -322,24 +322,67 @@ export default function ReporteAdmin() {
             {metodoData.length > 0 && (
               <Section icon={CreditCard} title="Método de pago">
                 <div className="bg-white rounded-2xl p-4 shadow-sm">
-                  <div className="space-y-2">
-                    {metodoData.sort((a, b) => b.value - a.value).map((m, i) => {
-                      const total = metodoData.reduce((s, x) => s + x.value, 0)
-                      const pct = total ? Math.round((m.value / total) * 100) : 0
+                  <div className="space-y-3">
+                    {metodoData.map((m, i) => {
+                      const total = metodoData.reduce((s, x) => s + x.cantidad, 0)
+                      const pct   = total ? Math.round((m.cantidad / total) * 100) : 0
+                      const esUSD = m.moneda === 'USD'
+                      const locale = m.moneda === 'COP' ? 'es-CO' : 'en-US'
                       return (
                         <div key={i}>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-600 font-medium">{m.name}</span>
-                            <span className="text-slate-400">{m.value} ({pct}%)</span>
+                          <div className="flex justify-between items-baseline mb-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-xs text-slate-600 font-medium truncate">
+                                {m.nombre}
+                              </span>
+                              {!esUSD && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5
+                                  rounded-full flex-shrink-0"
+                                  style={{ background: '#FEF3C7', color: '#B45309' }}>
+                                  {m.moneda}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-slate-400 flex-shrink-0 ml-2">
+                              {m.cantidad} ({pct}%)
+                            </span>
                           </div>
-                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-1">
                             <div className="h-full rounded-full" style={{
-                              width: `${pct}%`, background: '#1565C0',
+                              width: `${pct}%`,
+                              background: esUSD ? '#1565C0' : '#B45309',
                             }} />
+                          </div>
+
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-slate-500">
+                              {m.simbolo}
+                              {m.monto.toLocaleString(locale, {
+                                maximumFractionDigits: esUSD ? 2 : 0,
+                              })} {m.moneda}
+                            </span>
+                            {!esUSD && (
+                              <span className="font-semibold" style={{ color: '#1B7A3E' }}>
+                                = ${m.montoUsd.toFixed(2)} USD
+                              </span>
+                            )}
                           </div>
                         </div>
                       )
                     })}
+                  </div>
+
+                  {/* Total consolidado */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center
+                    justify-between">
+                    <p className="text-xs text-slate-500">Total cobrado</p>
+                    <p className="text-base font-black" style={{ color: '#1B7A3E' }}>
+                      {fmtUSD(metodoData.reduce((s, m) => s + m.montoUsd, 0))}
+                      <span className="text-[10px] font-normal text-slate-400 ml-1">
+                        USD
+                      </span>
+                    </p>
                   </div>
                 </div>
               </Section>

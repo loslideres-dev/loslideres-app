@@ -386,7 +386,7 @@ export default function Landing() {
               <div className="name">Los Líderes <span>Encomiendas</span></div>
               <p>Envíos de Colombia a Venezuela, de Maicao a Maracaibo, con seguimiento en tiempo real.</p>
               <div className="ll-footer__social">
-                <a href={waLink('Hola')} aria-label="WhatsApp">
+                <a href={waLink('Hola, quiero información sobre los envíos a Venezuela.')} aria-label="WhatsApp">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 12a8 8 0 0 1-11.7 7l-4.3 1 1-4A8 8 0 1 1 20 12z"/><path d="M9 9c0 3 3 6 6 6M9 9c0-.5.5-1 1-1s1.5 2 1.5 2-1 1-.5 1.5 1.5 1.5 1.5 1.5 1.5-1 1.5-1 2 1 2 1"/></svg>
                 </a>
                 <a href="#" aria-label="Instagram">

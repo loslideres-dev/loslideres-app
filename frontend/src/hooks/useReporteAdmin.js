@@ -79,10 +79,31 @@ export function useReporteAdmin(periodo = 'mes') {
         ? tiempos.reduce((a, b) => a + b, 0) / tiempos.length : 0
 
       // ── Método de pago ──
+      // Prefiere el nombre que viene del join con metodos_pago; cae al texto
+      // histórico para los paquetes anteriores a la migración multi-moneda.
+      // Agrupa por método guardando además la moneda, lo cobrado en esa
+      // moneda y su equivalente en dólares.
       const porMetodo = {}
       for (const p of entregados) {
-        const m = p.metodo_pago || 'Sin especificar'
-        porMetodo[m] = (porMetodo[m] || 0) + 1
+        const nombre = p.metodo_pago_nombre || p.metodo_pago || 'Sin especificar'
+        const moneda = p.moneda_cobro || 'USD'
+        const clave  = `${nombre}||${moneda}`
+
+        porMetodo[clave] = porMetodo[clave] ?? {
+          nombre,
+          moneda,
+          simbolo:  p.moneda_simbolo ?? '$',
+          cantidad: 0,
+          monto:    0,   // en la moneda del método
+          montoUsd: 0,   // equivalente congelado
+        }
+        porMetodo[clave].cantidad++
+        porMetodo[clave].monto    += Number(p.monto_cobrado) || 0
+        // Si el paquete es anterior a la migración no tiene monto_cobrado_usd:
+        // en ese caso lo cobrado ya estaba en dólares.
+        porMetodo[clave].montoUsd += Number(
+          p.monto_cobrado_usd ?? (moneda === 'USD' ? p.monto_cobrado : 0)
+        ) || 0
       }
 
       // ── Tendencia por día ──

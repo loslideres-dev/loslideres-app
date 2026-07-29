@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Package, Phone, MapPin, MessageCircle, Truck, Check, Loader2, RefreshCw, Navigation, Plane,
+  Camera, Image as ImageIcon, X,
 } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
+import { comprimirImagen } from '../../lib/imageUtils'
+import { useTasasVigentes, usdAMoneda } from '../../hooks/usePagos'
 import { useAuthStore } from '../../store/authStore'
 import {
   useEntregasConductor, usePonerEnTransito, useIniciarReparto, useMarcarEntregado,
@@ -31,15 +35,57 @@ export default function Entregas() {
   const { user } = useAuthStore()
   const [modal,    setModal]    = useState(null)
   const [receptor, setReceptor] = useState('')
+  const [fotoBlob,    setFotoBlob]    = useState(null)
+  const [fotoPreview, setFotoPreview] = useState(null)
+  const [fotoKB,      setFotoKB]      = useState(null)
+  const [procesando,  setProcesando]  = useState(false)
+  const [subiendo,    setSubiendo]    = useState(false)
+  const [montoCobrado, setMontoCobrado] = useState('')
+  const camRef = useRef(null)
+  const galRef = useRef(null)
   const [toast,    setToast]    = useState({ show: false, msg: '', type: 'success' })
 
   const { data: entregas = [], isLoading, refetch } = useEntregasConductor(user?.id)
+  const { data: tasas = {} } = useTasasVigentes()
   const { mutateAsync: ponerEnTransito, isPending: enviando } = usePonerEnTransito()
   const { mutateAsync: iniciarReparto, isPending: iniciando } = useIniciarReparto()
   const { mutateAsync: marcarEntregado, isPending: entregando } = useMarcarEntregado()
 
+  const limpiarFoto = () => {
+    setFotoBlob(null); setFotoPreview(null); setFotoKB(null)
+  }
+
+  const handleFoto = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setProcesando(true)
+    try {
+      const { blob, sizeKB } = await comprimirImagen(file, { maxKB: 300 })
+      setFotoBlob(blob)
+      setFotoKB(sizeKB)
+      setFotoPreview(URL.createObjectURL(blob))
+    } catch {
+      setToast({ show: true, msg: 'Error al procesar la foto', type: 'error' })
+    } finally {
+      setProcesando(false)
+    }
+  }
+
   const abrirEntrega = (p) => {
     setReceptor('')
+    limpiarFoto()
+    // Precargar el monto a cobrar. Si el método es en otra moneda se
+    // convierte con la tasa vigente; si falta la tasa se deja vacío para
+    // que el conductor lo escriba en vez de mostrar un número inventado.
+    const moneda = p.moneda_cobro ?? 'USD'
+    if (moneda === 'USD') {
+      setMontoCobrado(p.precio_final != null ? String(p.precio_final) : '')
+    } else {
+      const tasa = tasas[moneda]?.valor_por_usd
+      const convertido = usdAMoneda(p.precio_final, tasa)
+      setMontoCobrado(convertido != null ? String(Math.round(convertido)) : '')
+    }
     setModal(p)
   }
 
@@ -63,18 +109,55 @@ export default function Entregas() {
 
   const handleEntregar = async () => {
     if (!modal || !receptor.trim()) return
+    setSubiendo(true)
     try {
+      // Si el conductor tomó foto, se sube primero. Si falla la subida se
+      // avisa pero NO se bloquea la entrega: lo importante es registrar que
+      // el paquete llegó, la foto es un extra.
+      let foto_entrega_url = null
+      if (fotoBlob) {
+        try {
+          const path = `entrega_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`
+          const { error: errUp } = await supabase.storage
+            .from('paquetes-fotos')
+            .upload(path, fotoBlob, { contentType: 'image/jpeg', upsert: false })
+          if (errUp) throw errUp
+          const { data: { publicUrl } } = supabase.storage
+            .from('paquetes-fotos').getPublicUrl(path)
+          foto_entrega_url = publicUrl
+        } catch {
+          setToast({
+            show: true,
+            msg: 'No se pudo subir la foto, se registra la entrega igual',
+            type: 'error',
+          })
+        }
+      }
+
+      // Congelar la conversión con la tasa de este momento
+      const moneda = modal.moneda_cobro ?? 'USD'
+      const tasa   = moneda === 'USD' ? 1 : (tasas[moneda]?.valor_por_usd ?? null)
+      const monto  = parseFloat(montoCobrado) || modal.precio_final || 0
+      const montoUsd = tasa ? monto / tasa : null
+
       await marcarEntregado({
-        id:              modal.id,
-        nombre_receptor: receptor.trim(),
-        metodo_pago:     modal.metodo_pago ?? null,
-        monto_cobrado:   modal.precio_final ?? null,
-        anteriorEstado:  modal.estado,
+        id:                modal.id,
+        nombre_receptor:   receptor.trim(),
+        metodo_pago:       modal.metodo_pago ?? null,
+        monto_cobrado:     monto,
+        moneda_cobro:      moneda,
+        tasa_aplicada:     tasa,
+        monto_cobrado_usd: montoUsd,
+        anteriorEstado:    modal.estado,
+        foto_entrega_url,
       })
       setToast({ show: true, msg: '¡Paquete entregado! ✓', type: 'success' })
       setModal(null)
+      limpiarFoto()
     } catch {
       setToast({ show: true, msg: 'Error al marcar entregado', type: 'error' })
+    } finally {
+      setSubiendo(false)
     }
   }
 
@@ -246,7 +329,11 @@ export default function Entregas() {
       </div>
 
       {/* Modal de entrega */}
-      {modal && (
+      {modal && (() => {
+        const monedaCobro = modal.moneda_cobro ?? 'USD'
+        const tasaActual  = monedaCobro === 'USD' ? 1 : tasas[monedaCobro]?.valor_por_usd
+        const sinTasa     = monedaCobro !== 'USD' && !tasaActual
+        return (
         <Modal open={!!modal} onClose={() => setModal(null)}
           title={`Entregar ${modal.codigo}`}>
 
@@ -265,7 +352,7 @@ export default function Entregas() {
             </p>
             <div className="flex items-center justify-between mt-2">
               <div>
-                <p className="text-xs text-slate-400">A cobrar</p>
+                <p className="text-xs text-slate-400">Precio del envío</p>
                 <p className="text-lg font-black" style={{ color: '#1565C0' }}>
                   ${modal.precio_final} USD
                 </p>
@@ -273,13 +360,47 @@ export default function Entregas() {
               <div className="text-right">
                 <p className="text-xs text-slate-400">Método de pago</p>
                 <p className="text-sm font-semibold text-slate-700">
-                  {modal.metodo_pago ?? '—'}
+                  {modal.metodo_pago_nombre ?? modal.metodo_pago ?? '—'}
                 </p>
+                {monedaCobro !== 'USD' && (
+                  <p className="text-[10px] font-bold" style={{ color: '#B45309' }}>
+                    Se cobra en {monedaCobro}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           <div className="space-y-3">
+            {/* Monto a cobrar — editable solo si no es dólar */}
+            {monedaCobro !== 'USD' && (
+              <div className="bg-white rounded-xl p-4">
+                <p className="text-xs text-slate-400 mb-1">
+                  Monto a cobrar en {monedaCobro} *
+                </p>
+                <div className="relative">
+                  <input type="number" inputMode="decimal" value={montoCobrado}
+                    onChange={e => setMontoCobrado(e.target.value)}
+                    placeholder={sinTasa ? 'Escribe el monto' : ''}
+                    className="w-full px-4 py-3 pr-16 rounded-xl border border-slate-200
+                      text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2
+                    text-slate-400 text-xs">{monedaCobro}</span>
+                </div>
+                {sinTasa ? (
+                  <p className="text-xs mt-1.5" style={{ color: '#B45309' }}>
+                    No hay tasa de cambio cargada para {monedaCobro}. Escribe el monto
+                    que cobraste; administración puede cargar la tasa después.
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400 mt-1.5">
+                    Calculado con la tasa de hoy:{' '}
+                    {Number(tasaActual).toLocaleString('es-CO')} {monedaCobro} = 1 USD
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="bg-white rounded-xl p-4">
               <p className="text-xs text-slate-400 mb-1">¿Quién recibió el paquete? *</p>
               <input type="text" value={receptor}
@@ -289,16 +410,67 @@ export default function Entregas() {
                   text-sm outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
 
+            {/* Foto de entrega (opcional) */}
+            <input ref={camRef} type="file" accept="image/*" capture="environment"
+              className="hidden" onChange={handleFoto} />
+            <input ref={galRef} type="file" accept="image/*"
+              className="hidden" onChange={handleFoto} />
+
+            <div className="bg-white rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-slate-400">Foto de la entrega</p>
+                <span className="text-[10px] text-slate-300">opcional</span>
+              </div>
+
+              {fotoPreview ? (
+                <div className="relative">
+                  <img src={fotoPreview} alt="Entrega"
+                    className="w-full h-44 object-cover rounded-xl" />
+                  <button onClick={limpiarFoto}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full
+                      flex items-center justify-center active:scale-90 transition"
+                    style={{ background: 'rgba(0,0,0,0.55)' }}>
+                    <X size={16} className="text-white" />
+                  </button>
+                  {fotoKB != null && (
+                    <span className="absolute bottom-2 left-2 text-white text-[10px]
+                      font-semibold px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(0,0,0,0.5)' }}>
+                      {fotoKB} KB ✓
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => camRef.current?.click()} disabled={procesando}
+                    className="py-3 rounded-xl border-2 border-dashed border-slate-200
+                      bg-white flex items-center justify-center gap-2 text-slate-500
+                      text-xs font-medium active:scale-95 disabled:opacity-50">
+                    {procesando
+                      ? <Loader2 size={16} className="animate-spin" />
+                      : <Camera size={16} />}
+                    Tomar foto
+                  </button>
+                  <button onClick={() => galRef.current?.click()} disabled={procesando}
+                    className="py-3 rounded-xl border-2 border-dashed border-slate-200
+                      bg-white flex items-center justify-center gap-2 text-slate-500
+                      text-xs font-medium active:scale-95 disabled:opacity-50">
+                    <ImageIcon size={16} /> Galería
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button onClick={handleEntregar}
-              disabled={!receptor.trim() || entregando}
+              disabled={!receptor.trim() || entregando || subiendo || procesando}
               className="w-full py-4 rounded-2xl text-white font-semibold text-sm
                 flex items-center justify-center gap-2 disabled:opacity-50
                 active:scale-95 transition"
               style={{ background: '#1B7A3E' }}>
-              {entregando
+              {(entregando || subiendo)
                 ? <Loader2 size={18} className="animate-spin" />
                 : <Check size={18} />}
-              Confirmar entrega
+              {subiendo ? 'Subiendo foto...' : 'Confirmar entrega'}
             </button>
             <p className="text-xs text-center text-slate-400">
               El método de pago y monto los definió Administración.
@@ -306,7 +478,8 @@ export default function Entregas() {
             </p>
           </div>
         </Modal>
-      )}
+        )
+      })()}
     </ConductorLayout>
   )
 }

@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  LogOut, ArrowLeft, Truck, BarChart3,
-  LayoutDashboard, Package, Wallet,
+  LogOut, Truck, BarChart3,
+  LayoutDashboard, Package, Wallet, Settings,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
@@ -26,33 +26,56 @@ export default function ConductorLayout({ children }) {
       style={{ background: '#F4F6FA' }}>
 
       {/* Header (fijo) */}
-      <div className="flex-shrink-0 flex items-center justify-between px-5 pt-12 pb-4"
-        style={{ background: '#0D2B5E' }}>
-        <div className="flex items-center gap-3">
-          {esAdmin && (
-            <button onClick={() => navigate('/admin/dashboard')}
-              className="w-9 h-9 rounded-full flex items-center justify-center
-                text-slate-300 active:scale-95"
-              style={{ background: 'rgba(255,255,255,0.1)' }}>
-              <ArrowLeft size={18} />
-            </button>
-          )}
-          <img src={logoMini} alt="Los Líderes" className="w-10 h-10 rounded-xl" />
-          <div>
-            <p className="text-sky-300 text-xs">ENTREGAS</p>
-            <h1 className="text-white text-lg font-bold">{nombre}</h1>
+      {esAdmin ? (
+        /* ── Header idéntico al AdminLayout ── */
+        <div className="flex-shrink-0 px-5 pt-12 pb-5"
+          style={{ background: '#0D2B5E' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={logoMini} alt="Los Líderes" className="w-10 h-10 rounded-xl" />
+              <div>
+                <p className="text-sky-300 text-xs font-medium">ADMINISTRACIÓN</p>
+                <h1 className="text-white text-xl font-bold">Entregas</h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate('/admin/tarifas')}
+                className="text-slate-300 hover:text-white transition p-1 active:scale-95"
+                title="Configuración de tarifas">
+                <Settings size={20} />
+              </button>
+              <NotifBell />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center
+                text-white text-xs font-bold" style={{ background: '#1565C0' }}>
+                {nombre.slice(0, 2).toUpperCase()}
+              </div>
+              <button onClick={handleLogout}
+                className="text-slate-400 hover:text-white transition p-1 active:scale-95">
+                <LogOut size={18} />
+              </button>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <NotifBell />
-          {!esAdmin && (
+      ) : (
+        /* ── Header del conductor ── */
+        <div className="flex-shrink-0 flex items-center justify-between px-5 pt-12 pb-4"
+          style={{ background: '#0D2B5E' }}>
+          <div className="flex items-center gap-3">
+            <img src={logoMini} alt="Los Líderes" className="w-10 h-10 rounded-xl" />
+            <div>
+              <p className="text-sky-300 text-xs">ENTREGAS</p>
+              <h1 className="text-white text-lg font-bold">{nombre}</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <NotifBell />
             <button onClick={handleLogout}
               className="text-slate-400 hover:text-white transition p-2 active:scale-95">
               <LogOut size={20} />
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto">

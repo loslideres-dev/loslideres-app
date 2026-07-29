@@ -1,92 +1,80 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [0.5.1] — 2026-07-29
+
+### ✨ Nuevas funcionalidades
+
+* **Foto de entrega** — el conductor puede tomar o subir una foto al marcar un paquete como entregado. Queda como comprobante visible para el cliente en el detalle del paquete y para el admin en el modal. La foto es opcional: si la subida falla por mala señal, la entrega se registra igual.
+
+* **Infraestructura multi-moneda** — el sistema queda preparado para cobrar en COP y VES sin redeplegar. Desde ⚙️ Tarifas el admin puede habilitar monedas, registrar tasas de cambio y crear métodos de pago atados a cada moneda. Hoy solo USD está activo; las demás monedas se activan cuando se necesiten.
+
+* **Métodos de pago configurables desde la BD** — los cuatro métodos anteriores (Efectivo, Zelle, Transferencia, Pago móvil) migran a la tabla `metodos_pago`. Crear, renombrar o deshabilitar un método ya no requiere código ni redespliegue.
+
+* **Tasas de cambio históricas** — cada tasa queda registrada con fecha. Al cobrar en otra moneda la tasa se congela en el paquete (`tasa_aplicada`, `monto_cobrado_usd`), así los reportes históricos no cambian si la tasa cambia después.
+
+* **Reporte financiero con multi-moneda** — el desglose de métodos de pago ahora muestra el monto cobrado en cada moneda y su equivalente en USD, con total consolidado. Nuevo hook `usePagos.js` con helpers de conversión.
+
+### 🔧 Mejoras
+
+* **Dirección congelada al tarifar** — la dirección de entrega se copia al paquete cuando el admin tarifa. Si el cliente cambia su dirección después, el conductor no ve la dirección nueva a mitad de camino. Los paquetes existentes se migraron con la dirección actual de cada cliente.
+
+* **Header de Entregas unificado para admin** — cuando el admin entra a la pantalla de Entregas, el header ahora es idéntico al del resto de pantallas de administración: "ADMINISTRACIÓN", título, engranaje de tarifas, campanita y avatar.
+
+* **Nombre del cliente en header del Casillero** — el título "Mi casillero" reemplazado por el nombre real del cliente.
+
+* **Navbar fijo en la pantalla de Perfil del cliente** — el área del formulario ahora scrollea independientemente, el navbar queda anclado abajo.
+
+* **Bug #48 corregido** — el modal de PaquetesAdmin ya no se vuelve a abrir solo al cambiar de filtro cuando hay `?tarificar=` en la URL. Se aplica la bandera `modalAbiertoAuto` propuesta en el backlog.
+
+### 🗄️ Base de datos (SQL ejecutados)
+
+* `07_foto_entrega_y_direccion.sql` — columnas `foto_entrega_url` y `direccion_entrega` en `paquetes`; backfill de dirección para paquetes existentes; vista `paquetes_con_cliente` recreada.
+* `08_multimoneda.sql` — tablas `monedas`, `tasas_cambio`, `metodos_pago`; columnas `metodo_pago_id`, `moneda_cobro`, `tasa_aplicada`, `monto_cobrado_usd` en `paquetes`; función `tasa_vigente()`; migración de datos históricos a USD; vista recreada con joins a las tablas nuevas.
+
+
 ## [0.5.0] — 2026-07-28
 
 ### ✨ Nuevas funcionalidades
 
-* **Sistema de liquidaciones (cierres de pago)** — módulo completo para pagar a conductores y bodegueros.
-  - Pantalla "Cierres" en el navbar del admin (reemplaza "Usuarios").
-  - Tabs Bodegueros / Conductores, cada uno con su total pendiente, lista de personas con saldo y buscador.
-  - Modal de liquidación: monto del periodo, fechas, campo de notas, tarjeta plegable con los paquetes incluidos y confirmación en dos pasos.
-  - Historial de cierres anteriores por persona, con detalle completo al tocar cada uno.
-  - El contador de cada persona vuelve a cero tras el cierre. El historial se conserva siempre.
-  - Los administradores se excluyen de la lista de conductores (se asignan traslado $0).
-  - Toda la lógica (cálculo, marcado de paquetes y transacción) corre en Supabase via funciones `SECURITY DEFINER`.
-
-* **ReporteBodeguero rediseñado** — muestra el acumulado pendiente del periodo actual (desde el último cierre) y un historial de liquidaciones con fecha, paquetes y monto. El detalle de recepciones fue reemplazado por el historial de pagos.
-
-* **ReporteConductor rediseñado** — mismo patrón: periodo actual pendiente + historial de liquidaciones con detalle desplegable.
-
-* **ReporteAdmin — Estado de cuenta** — nueva sección en el tab Financiero con ingresos vs egresos (utilidad y margen), comisiones a bodegueros en COP separadas, deuda viva pendiente de liquidar y lo ya pagado en el periodo.
-
-* **ReporteAdmin — Por persona** — desglose de entregas e ingresos generados por cada conductor, y recepciones y comisión por cada bodeguero.
-
-* **ReporteAdmin — Tabs Operativo / Financiero** — las secciones del reporte se reorganizan en dos tabs. Operativo (operación, tendencia, rankings) y Financiero (resumen financiero, estado de cuenta, método de pago, por persona). El selector de periodo es compartido.
-
-* **Dashboard — sección Gestión** — accesos rápidos a Usuarios y Tarifas debajo de los KPIs, ahora que Usuarios salió del navbar.
+* **Sistema de liquidaciones (cierres de pago)** — módulo completo para pagar a conductores y bodegueros. Pantalla "Cierres" en el navbar. Tabs Bodegueros / Conductores con total pendiente, lista de personas con saldo, buscador e historial. Modal de liquidación con monto, periodo, notas, paquetes incluidos (plegable) y confirmación en dos pasos. El contador vuelve a cero tras cada cierre; el historial se conserva. Los admins se excluyen de conductores a pagar. Toda la lógica corre en Supabase via funciones `SECURITY DEFINER`.
+* **ReporteBodeguero rediseñado** — periodo actual pendiente + historial de liquidaciones con detalle desplegable.
+* **ReporteConductor rediseñado** — mismo patrón.
+* **ReporteAdmin — Estado de cuenta** — ingresos vs egresos, utilidad y margen, comisiones COP separadas, deuda viva y lo ya pagado.
+* **ReporteAdmin — Por persona** — entregas e ingresos por conductor; recepciones y comisión por bodeguero.
+* **ReporteAdmin — Tabs Operativo / Financiero** — selector de periodo compartido.
+* **Dashboard — sección Gestión** — accesos rápidos a Usuarios y Tarifas.
 
 ### 🗄️ Base de datos (SQL ejecutados)
 
-* `06_liquidaciones.sql` — tabla `liquidaciones`, columnas `liquidacion_conductor_id` / `liquidacion_bodeguero_id` en `paquetes`, índices parciales, RLS, funciones RPC `liquidar_conductor` y `liquidar_bodeguero`, vista `pendientes_liquidacion`.
+* `06_liquidaciones.sql` — tabla `liquidaciones`, marcas en `paquetes`, índices parciales, RLS, funciones `liquidar_conductor` y `liquidar_bodeguero`, vista `pendientes_liquidacion`.
 
 
 ## [0.4.2] — 2026-07-28
 
 ### ✨ Nuevas funcionalidades
 
-* **Visor de imagen a pantalla completa** — al tocar la foto de un paquete en el modal del admin, en los registros del bodeguero y en el detalle del cliente, la imagen se expande en un overlay oscuro. Tap fuera o botón X para cerrar. Componente reutilizable `ImageViewer.jsx`.
-* **Botón WhatsApp en Casillero** — el cliente puede contactar a Los Líderes directamente desde su pantalla de casillero. El mensaje pre-armado incluye su nombre y código de casillero.
+* **Visor de imagen a pantalla completa** — componente reutilizable `ImageViewer.jsx`.
+* **Botón WhatsApp en Casillero** — contacto directo con mensaje pre-armado.
 
 ### 🔧 Mejoras
 
-* **Usuarios — correo electrónico visible** — el modal de detalle de usuario muestra el correo como enlace `mailto:`, visible para todos los roles.
-* **Usuarios — dirección abre Google Maps** — al tocar la dirección de entrega en el detalle de un usuario, se abre Google Maps con la dirección pre-cargada.
-* **Registro simplificado** — el formulario de "Crear cuenta" ya no pide teléfono ni dirección. Solo nombre, correo y contraseña. Los datos de entrega se completan en el onboarding, evitando la duplicación.
+* Correo y dirección (→ Google Maps) visibles en el detalle de usuario del admin.
+* Registro simplificado: solo nombre, correo y contraseña. Teléfono y dirección van al onboarding.
 
-
-## [0.4.0](https://github.com/loslideres-dev/loslideres-app/compare/v0.3.10...v0.4.0) (2026-07-28)
-
-
-### ✨ Nuevas funcionalidades
-
-* rastreo público de paquetes con Supabase (RPC segura + timeline) ([0d4b03a](https://github.com/loslideres-dev/loslideres-app/commit/0d4b03ab0defaed78f2fbc248d39c9a6bd397532))
 
 ## [0.4.0] — 2026-07-27
 
 ### ✨ Nuevas funcionalidades
 
-* **Tracking del courier** — el bodeguero registra el código externo (Amazon, Servientrega, etc.) al recibir el paquete. Se muestra como código principal en todas las vistas del cliente y conductor; el admin también ve ambos. Búsqueda por ENC o tracking en el panel del admin. Hook `useBuscarPaquete` listo para la página de rastreo público.
-* **Flujo de estados rediseñado** — el paso a EN_TRANSITO lo hace el **conductor** (botón "Poner en tránsito" al salir de Maicao). Se eliminó la pantalla de despachar del admin. El conductor ve tres botones según el estado: Poner en tránsito / Iniciar reparto / Marcar entregado.
-* **Método de pago al tarifar** — el admin define el método de pago del cliente al momento de tarifar (obligatorio). El conductor al entregar solo registra quién recibió; método y monto ya vienen definidos.
-* **Monto de traslado condicional** — al tarifar, el admin ve el campo de monto de traslado solo si asigna un conductor diferente a él mismo; si se asigna a sí mismo, no se pide monto.
-* **Mapa desde la asignación** — el conductor ve el mapa y la dirección desde que el paquete le es asignado (estado TARIFADO), no solo en reparto. Facilita la planificación de ruta.
-* **Reporte del negocio (admin)** — nueva pantalla de reportes con selector Hoy/Semana/Mes/Todo. Incluye: resumen financiero (ingresos, ganancia neta, pagos en USD separados de COP), operativo (estados, tamaños con gráfico), tendencia (paquetes por día, métodos de pago) y rankings (top conductores, bodegueros y clientes). Usa Recharts para los gráficos.
-* **Función RPC de rastreo público** — `rastrear_paquete(codigo)` en Supabase: devuelve solo estado y fechas, sin datos privados. Lista para la landing pública. Accesible sin login vía rol `anon`.
-* **Editar / eliminar registros del bodeguero** — en "Mis registros", las tarjetas son clickeables. Si el paquete está en RECIBIDO, el bodeguero puede editar todos los datos (incluida la foto) o eliminar con confirmación. Si ya avanzó de estado, solo puede ver.
-
-### 🔧 Mejoras
-
-* **Navbar del admin reorganizado** — se quitó Tarifas del navbar (ahora es un ícono de engranaje ⚙️ en el header, como "Configuración") y se agregó Reportes al final.
-* **Scroll fijo en todos los listados** — header y filtros quedan fijos en pantalla; solo la lista de paquetes/registros hace scroll. Aplicado a cliente, bodeguero, conductor y admin.
-* **Campanita de notificaciones en cliente** — NotifBell agregado al header de Casillero y Mis Paquetes.
-* **Navbar completo al admin en vista conductor** — cuando el admin entra a /conductor/entregas, el navbar muestra todas sus pestañas de admin (no desaparece el nav).
-* **Formulario de creación de usuario simplificado** — se quitaron teléfono y dirección del form (el cliente los completa en el onboarding). El form solo pide nombre, correo, contraseña y rol.
-* **Imágenes completas en las cards** — todas las miniaturas de las listas usan `object-contain` (la foto se ve completa de arriba a abajo, sin recorte).
-* **Notificaciones usan tracking** — cuando el cliente o conductor reciben una notificación, el mensaje muestra el tracking del courier si existe; si no, el código ENC. Las notificaciones a admins siempre usan el ENC interno.
-* **Modal no corta contenido** — z-index subido a `z-[60]` para quedar sobre el navbar; padding inferior con safe-area para que el contenido al final no quede tapado.
-* **Prefill en modal del admin** — al abrir el modal de un paquete ya tarifado, los campos de método de pago y monto del conductor se precargan con los valores existentes.
-
-### 🐛 Correcciones
-
-* Import duplicado de `BarChart3` en `ConductorLayout` que rompía el build de Railway.
-* El conductor ya no ve el selector de método de pago al entregar (era redundante, el admin lo define al tarifar).
-* Total cobrado a clientes eliminado del reporte del conductor (información confidencial del admin).
-* Trigger `handle_new_user` corregido: solo genera código de casillero (LID) para clientes; conductores, bodegueros y admins no reciben casillero. Limpieza de casilleros mal asignados a usuarios existentes.
+* Tracking del courier en toda la app + búsqueda por ENC o tracking.
+* Flujo de estados rediseñado: EN_TRANSITO lo pone el conductor.
+* Método de pago y monto de traslado al tarifar.
+* Mapa visible desde la asignación (estado TARIFADO).
+* Reporte del negocio con gráficos (Recharts).
+* Función RPC de rastreo público para la landing.
+* Editar/eliminar registros del bodeguero en estado RECIBIDO.
 
 ### 🗄️ Base de datos (SQL ejecutados)
 
-* `02_fix_trigger_roles.sql` — trigger corregido + limpieza de casilleros en no-clientes
-* `03_rls_bodeguero_editar.sql` — políticas RLS para UPDATE/DELETE del bodeguero en RECIBIDO
-* `05_tracking_externo.sql` — columna `tracking_externo` en `paquetes`, índice de búsqueda, vista `paquetes_con_cliente` recreada con el nuevo campo
-* `rastrear_paquete(TEXT)` — función RPC pública (GRANT EXECUTE TO anon)
+* `05_tracking_externo.sql`, `rastrear_paquete()`, `02_fix_trigger_roles.sql`, `03_rls_bodeguero_editar.sql`.

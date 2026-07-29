@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Package, Loader2, MessageCircle, Phone, MapPin, User, Navigation, Search, X } from 'lucide-react'
 import { usePaquetesAdmin, useTarifar, useMarcarEntregado } from '../../hooks/usePaquetes'
 import { useConductores } from '../../hooks/usePerfiles'
 import { useAuthStore } from '../../store/authStore'
-import { METODOS_PAGO } from '../../constants/roles'
+import { useMetodosPago, useTasasVigentes } from '../../hooks/usePagos'
 import { useTarifas, getPrecioSugerido } from '../../hooks/useTarifas'
 import AdminLayout from '../../components/layout/AdminLayout'
 import EstadoBadge from '../../components/ui/EstadoBadge'
@@ -56,7 +56,6 @@ export default function PaquetesAdmin() {
   const [modal,    setModal]    = useState(null)
   const [precio,   setPrecio]   = useState('')
   const [fechaEst, setFechaEst] = useState('')
-  const [monto,    setMonto]    = useState('')
   const [conductorSel, setConductorSel] = useState('')
   const [montoTraslado, setMontoTraslado] = useState('')
   const [metodoTarifa, setMetodoTarifa] = useState('')
@@ -65,6 +64,7 @@ export default function PaquetesAdmin() {
   const [montoCobrado, setMontoCobrado] = useState('')
   const [toast,    setToast]    = useState({ show: false, msg: '', type: 'success' })
   const [visorSrc, setVisorSrc] = useState(null)  // ← visor imagen
+  const modalAbiertoAuto = useRef(false)          // ← evita reapertura del modal
 
   const { data: paquetes = [], isLoading } = usePaquetesAdmin(filtro)
 
@@ -76,26 +76,20 @@ export default function PaquetesAdmin() {
         p.cliente_nombre?.toLowerCase().includes(q))
     : paquetes
   const { data: tarifas  = [] }            = useTarifas()
+  const { data: metodosPago = [] }         = useMetodosPago(true)
+  const { data: tasas = {} }               = useTasasVigentes()
   const { mutateAsync: tarifar,   isPending: tarifando   } = useTarifar()
   const { mutateAsync: marcarEntregado, isPending: entregando } = useMarcarEntregado()
   const { data: conductores = [] } = useConductores()
   const { user } = useAuthStore()
 
-  useEffect(() => {
-    if (tarificarParam && paquetes.length > 0) {
-      const p = paquetes.find(x => x.id === tarificarParam)
-      if (p) openModal(p)
-    }
-  }, [tarificarParam, paquetes])
-
   const openModal = (p) => {
     const sugerido = getPrecioSugerido(tarifas, p.tamanio)
     setPrecio(sugerido?.toString() ?? '')
     setFechaEst('')
-    setMonto('')
     setConductorSel(p.conductor_id ?? '')
     setMontoTraslado(p.monto_traslado ? String(p.monto_traslado) : '')
-    setMetodoTarifa(p.metodo_pago ?? '')
+    setMetodoTarifa(p.metodo_pago_id ?? '')
     setReceptor('')
     setMetodoPago(p.metodo_pago ?? 'Efectivo')
     setMontoCobrado(p.precio_final ? String(p.precio_final) : '')
@@ -104,10 +98,33 @@ export default function PaquetesAdmin() {
     setModal(p)
   }
 
+  // Auto-abrir el modal cuando se llega con ?tarificar=<id> en la URL.
+  // La bandera evita que el modal se vuelva a abrir solo al cambiar de filtro,
+  // porque el parámetro sigue en la URL aunque ya se haya atendido.
+  useEffect(() => {
+    if (!tarificarParam || modalAbiertoAuto.current) return
+    if (paquetes.length === 0) return
+    const p = paquetes.find(x => x.id === tarificarParam)
+    if (p) {
+      modalAbiertoAuto.current = true
+      // Sincronizar la URL con el estado de la UI es un caso legítimo de efecto:
+      // el parámetro viene de fuera de React y solo se atiende una vez.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      openModal(p)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tarificarParam, paquetes])
+
   const clienteNombre   = modal?.cliente_nombre    ?? modal?.perfiles?.nombre            ?? '—'
   const clienteTelefono = modal?.cliente_telefono  ?? modal?.perfiles?.telefono          ?? ''
   const clienteCodigo   = modal?.cliente_codigo    ?? modal?.perfiles?.codigo_casillero  ?? '—'
   const clienteDireccion = modal?.cliente_direccion ?? ''
+
+  const metodoElegido = metodosPago.find(m => m.id === metodoTarifa) ?? null
+
+  // Moneda y tasa del paquete que está abierto en el modal
+  const monedaModal = modal?.moneda_cobro ?? 'USD'
+  const tasaModal   = monedaModal === 'USD' ? 1 : (tasas[monedaModal]?.valor_por_usd ?? null)
 
   const esOtroConductor = conductorSel && conductorSel !== user.id
 
@@ -130,8 +147,11 @@ export default function PaquetesAdmin() {
         fecha_estimada:  fechaEst || null,
         conductor_id:    conductorSel || user.id,
         monto_traslado:  esOtroConductor ? (parseFloat(montoTraslado) || 0) : 0,
-        metodo_pago:     metodoTarifa,
+        metodo_pago_id:  metodoTarifa,
+        metodo_pago:     metodoElegido?.nombre ?? null,
+        moneda_cobro:    metodoElegido?.moneda_codigo ?? 'USD',
         anteriorEstado:  modal.estado,
+        direccion_entrega: clienteDireccion || null,
       })
       setToast({ show: true, msg: '¡Paquete tarifado y asignado!', type: 'success' })
       setModal(null)
@@ -143,12 +163,18 @@ export default function PaquetesAdmin() {
   const handleMarcarEntregado = async () => {
     if (!modal || !receptor.trim()) return
     try {
+      const monto    = parseFloat(montoCobrado) || null
+      const montoUsd = (monto != null && tasaModal) ? monto / tasaModal : null
+
       await marcarEntregado({
-        id:              modal.id,
-        nombre_receptor: receptor.trim(),
-        metodo_pago:     metodoPago,
-        monto_cobrado:   parseFloat(montoCobrado) || null,
-        anteriorEstado:  modal.estado,
+        id:                modal.id,
+        nombre_receptor:   receptor.trim(),
+        metodo_pago:       modal.metodo_pago_nombre ?? modal.metodo_pago ?? metodoPago,
+        monto_cobrado:     monto,
+        moneda_cobro:      monedaModal,
+        tasa_aplicada:     tasaModal,
+        monto_cobrado_usd: montoUsd,
+        anteriorEstado:    modal.estado,
       })
       setToast({ show: true, msg: '¡Paquete entregado! ✓', type: 'success' })
       setModal(null)
@@ -428,20 +454,31 @@ export default function PaquetesAdmin() {
                 <div className="bg-white rounded-xl p-4">
                   <p className="text-xs text-slate-400 mb-2">Método de pago del cliente *</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {METODOS_PAGO.map(m => (
-                      <button key={m} onClick={() => setMetodoTarifa(m)}
+                    {metodosPago.map(m => (
+                      <button key={m.id} onClick={() => setMetodoTarifa(m.id)}
                         className={`py-2.5 rounded-xl text-xs font-semibold border-2
-                          transition active:scale-95
-                          ${metodoTarifa === m
+                          transition active:scale-95 flex flex-col items-center gap-0.5
+                          ${metodoTarifa === m.id
                             ? 'text-white'
                             : 'border-slate-200 text-slate-600 bg-white'}`}
-                        style={metodoTarifa === m
+                        style={metodoTarifa === m.id
                           ? { background: '#1565C0', borderColor: '#1565C0' }
                           : {}}>
-                        {m}
+                        {m.nombre}
+                        {m.moneda_codigo !== 'USD' && (
+                          <span className={`text-[9px] font-bold
+                            ${metodoTarifa === m.id ? 'opacity-70' : 'text-slate-400'}`}>
+                            {m.moneda_codigo}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
+                  {metodosPago.length === 0 && (
+                    <p className="text-xs text-slate-400 text-center py-2">
+                      No hay métodos de pago habilitados. Actívalos en ⚙️ Tarifas.
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-xl p-4">
@@ -534,6 +571,28 @@ export default function PaquetesAdmin() {
                   </div>
                 </div>
 
+                {modal.monto_cobrado != null && (
+                  <div className="bg-white rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-slate-400">Cobrado</p>
+                      <p className="text-sm font-bold text-slate-800">
+                        {modal.moneda_simbolo ?? '$'}
+                        {Number(modal.monto_cobrado).toLocaleString(
+                          modal.moneda_cobro === 'COP' ? 'es-CO' : 'en-US')}
+                        {' '}{modal.moneda_cobro ?? 'USD'}
+                      </p>
+                    </div>
+                    {modal.moneda_cobro && modal.moneda_cobro !== 'USD' && (
+                      <div className="text-right">
+                        <p className="text-xs text-slate-400">Equivale a</p>
+                        <p className="text-sm font-bold" style={{ color: '#1B7A3E' }}>
+                          ${Number(modal.monto_cobrado_usd ?? 0).toFixed(2)} USD
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {modal.fecha_estimada && (
                   <div className="bg-white rounded-xl p-3">
                     <p className="text-xs text-slate-400">Fecha estimada</p>
@@ -554,6 +613,27 @@ export default function PaquetesAdmin() {
                   </div>
                 )}
 
+                {/* Comprobante de entrega */}
+                {modal.foto_entrega_url && (
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1.5">
+                      Comprobante de entrega
+                    </p>
+                    <button
+                      onClick={() => setVisorSrc(modal.foto_entrega_url)}
+                      className="w-full relative active:opacity-90 transition"
+                    >
+                      <img src={modal.foto_entrega_url} alt="Comprobante"
+                        className="w-full h-40 object-cover rounded-xl" />
+                      <span className="absolute bottom-2 right-2 text-white text-[10px]
+                        font-semibold px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(0,0,0,0.45)' }}>
+                        Toca para ampliar
+                      </span>
+                    </button>
+                  </div>
+                )}
+
                 {['EN_TRANSITO','EN_REPARTO'].includes(modal.estado) && (
                   <div className="pt-2 space-y-3">
                     <p className="text-xs font-semibold text-slate-400 tracking-wider">
@@ -567,30 +647,34 @@ export default function PaquetesAdmin() {
                         className="w-full px-4 py-3 rounded-xl border border-slate-200
                           text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
-                    <div className="bg-white rounded-xl p-4">
-                      <p className="text-xs text-slate-400 mb-2">Método de pago</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {METODOS_PAGO.map(m => (
-                          <button key={m} onClick={() => setMetodoPago(m)}
-                            className={`py-2.5 rounded-xl text-xs font-semibold border-2
-                              transition active:scale-95
-                              ${metodoPago === m
-                                ? 'text-white'
-                                : 'border-slate-200 text-slate-600 bg-white'}`}
-                            style={metodoPago === m
-                              ? { background: '#1565C0', borderColor: '#1565C0' }
-                              : {}}>
-                            {m}
-                          </button>
-                        ))}
+                    <div className="bg-white rounded-xl p-4 flex items-center
+                      justify-between">
+                      <div>
+                        <p className="text-xs text-slate-400">Método de pago</p>
+                        <p className="text-sm font-semibold text-slate-800">
+                          {modal.metodo_pago_nombre ?? modal.metodo_pago ?? '—'}
+                        </p>
                       </div>
+                      <span className="text-xs font-bold px-2 py-1 rounded-full"
+                        style={{ background: '#EEF2F8', color: '#1565C0' }}>
+                        {monedaModal}
+                      </span>
                     </div>
                     <div className="bg-white rounded-xl p-4">
-                      <p className="text-xs text-slate-400 mb-1">Monto cobrado (USD)</p>
+                      <p className="text-xs text-slate-400 mb-1">
+                        Monto cobrado ({monedaModal})
+                      </p>
                       <input type="number" inputMode="decimal" value={montoCobrado}
                         onChange={e => setMontoCobrado(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl border border-slate-200
                           text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" />
+                      {monedaModal !== 'USD' && (
+                        <p className="text-xs text-slate-400 mt-1.5">
+                          {tasaModal
+                            ? `Equivale a $${(parseFloat(montoCobrado || 0) / tasaModal).toFixed(2)} USD`
+                            : `Sin tasa cargada para ${monedaModal} — cárgala en ⚙️ Tarifas`}
+                        </p>
+                      )}
                     </div>
                     <button onClick={handleMarcarEntregado}
                       disabled={!receptor.trim() || entregando}

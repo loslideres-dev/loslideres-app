@@ -35,7 +35,9 @@ export const TAMANIOS = [
   { value: 'XL', label: 'XL — Extra grande', desc: 'Electrodomésticos, bultos',     precio: 60 },
 ]
 
-export const METODOS_PAGO = ['Efectivo', 'Zelle', 'Transferencia', 'Pago móvil']
+// Los métodos de pago ahora viven en la tabla `metodos_pago` de Supabase,
+// cada uno atado a su moneda y habilitable desde ⚙️ Tarifas.
+// Se leen con el hook useMetodosPago() de hooks/usePagos.js
 
 export const TIMELINE_ESTADOS = [
   { estado: 'RECIBIDO',    label: 'Recibido en bodega',    field: 'fecha_recepcion' },

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Copy, LogOut, ChevronRight, AlertCircle, MessageCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -68,8 +68,8 @@ export default function Casillero() {
       <div className="flex-shrink-0 px-5 pt-12 pb-6" style={{ background: '#0D2B5E' }}>
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-sky-300 text-xs mb-0.5">MAICAO · CO</p>
-            <h1 className="text-white text-xl font-bold">Mi casillero</h1>
+            <p className="text-sky-300 text-xs mb-0.5">MI CASILLERO</p>
+            <h1 className="text-white text-xl font-bold">{nombre}</h1>
           </div>
           <div className="flex items-center gap-3">
             <NotifBell />

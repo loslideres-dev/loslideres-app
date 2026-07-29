@@ -185,19 +185,28 @@ export function useTarifar() {
   return useMutation({
     mutationFn: async ({
       id, precio_sugerido, precio_final, fecha_estimada,
-      conductor_id, monto_traslado, metodo_pago, anteriorEstado,
+      conductor_id, monto_traslado, metodo_pago, metodo_pago_id,
+      moneda_cobro, anteriorEstado, direccion_entrega,
     }) => {
+      // La dirección se congela aquí: a partir de este momento el paquete
+      // lleva su propia dirección y ya no cambia si el cliente edita su
+      // perfil estando el envío en camino.
+      const cambios = {
+        precio_sugerido,
+        precio_final,
+        fecha_estimada,
+        conductor_id,
+        monto_traslado: monto_traslado ?? 0,
+        metodo_pago,
+        estado: 'TARIFADO',
+      }
+      if (direccion_entrega) cambios.direccion_entrega = direccion_entrega
+      if (metodo_pago_id)    cambios.metodo_pago_id    = metodo_pago_id
+      if (moneda_cobro)      cambios.moneda_cobro      = moneda_cobro
+
       const { data, error } = await supabase
         .from('paquetes')
-        .update({
-          precio_sugerido,
-          precio_final,
-          fecha_estimada,
-          conductor_id,
-          monto_traslado: monto_traslado ?? 0,
-          metodo_pago,
-          estado: 'TARIFADO',
-        })
+        .update(cambios)
         .eq('id', id)
         .select()
         .single()
@@ -324,16 +333,28 @@ export function useIniciarReparto() {
 export function useMarcarEntregado() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, nombre_receptor, metodo_pago, monto_cobrado, anteriorEstado }) => {
+    mutationFn: async ({
+      id, nombre_receptor, metodo_pago, monto_cobrado, anteriorEstado,
+      foto_entrega_url, moneda_cobro, tasa_aplicada, monto_cobrado_usd,
+    }) => {
+      const cambios = {
+        estado:        'ENTREGADO',
+        fecha_entrega: new Date().toISOString(),   // fecha automática
+        nombre_receptor,
+        metodo_pago,
+        monto_cobrado,
+      }
+      if (foto_entrega_url) cambios.foto_entrega_url = foto_entrega_url
+
+      // El cobro se congela con la tasa del momento. Si la moneda es el
+      // dólar la tasa es 1 y el monto en USD es el mismo.
+      if (moneda_cobro)            cambios.moneda_cobro      = moneda_cobro
+      if (tasa_aplicada != null)   cambios.tasa_aplicada     = tasa_aplicada
+      if (monto_cobrado_usd != null) cambios.monto_cobrado_usd = monto_cobrado_usd
+
       const { data, error } = await supabase
         .from('paquetes')
-        .update({
-          estado:          'ENTREGADO',
-          fecha_entrega:   new Date().toISOString(),   // fecha automática
-          nombre_receptor,
-          metodo_pago,
-          monto_cobrado,
-        })
+        .update(cambios)
         .eq('id', id)
         .select()
         .single()
@@ -343,7 +364,10 @@ export function useMarcarEntregado() {
         entidad:   'paquetes',
         entidadId: id,
         valorAnterior: { estado: anteriorEstado },
-        valorNuevo: { estado: 'ENTREGADO', nombre_receptor, metodo_pago, monto_cobrado },
+        valorNuevo: {
+          estado: 'ENTREGADO', nombre_receptor, metodo_pago, monto_cobrado,
+          con_foto: !!foto_entrega_url,
+        },
       })
       if (data?.cliente_id) {
         await crearNotificacion({

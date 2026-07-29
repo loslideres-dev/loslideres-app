@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Save, Loader2, User } from 'lucide-react'
+import { LogOut, Save, Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
 import { useMiPerfil, useActualizarPerfil } from '../../hooks/usePerfiles'
@@ -18,6 +18,7 @@ export default function Perfil() {
 
   useEffect(() => {
     if (perfil) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         nombre:           perfil.nombre ?? '',
         telefono:         perfil.telefono ?? '',
@@ -49,8 +50,8 @@ export default function Perfil() {
       <Toast message={toast.msg} show={toast.show} type={toast.type}
         onHide={() => setToast(t => ({ ...t, show: false }))} />
 
-      {/* Header */}
-      <div className="px-5 pt-12 pb-8 flex flex-col items-center"
+      {/* Header (fijo) */}
+      <div className="flex-shrink-0 px-5 pt-12 pb-8 flex flex-col items-center"
         style={{ background: '#0D2B5E' }}>
         <div className="w-20 h-20 rounded-full flex items-center justify-center
           text-white text-2xl font-black mb-3" style={{ background: '#1565C0' }}>
@@ -61,7 +62,7 @@ export default function Perfil() {
         <p className="text-slate-400 text-xs mt-0.5">{user?.email}</p>
       </div>
 
-      <div className="px-5 py-5 space-y-4">
+      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4 pb-6">
 
         {isLoading
           ? <div className="flex justify-center py-8">

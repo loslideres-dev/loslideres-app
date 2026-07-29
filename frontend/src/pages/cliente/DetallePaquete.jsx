@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
-import { ArrowLeft, Package, MapPin, Calendar, User, CreditCard } from 'lucide-react'
+import { ArrowLeft, Package, Calendar, User, CreditCard } from 'lucide-react'
 import EstadoBadge from '../../components/ui/EstadoBadge'
 import ClienteLayout from '../../components/layout/ClienteLayout'
 import ImageViewer from '../../components/ui/ImageViewer'
@@ -44,7 +44,7 @@ function InfoRow({ icon: Icon, label, value }) {
 export default function DetallePaquete() {
   const { id }   = useParams()
   const navigate = useNavigate()
-  const [visorAbierto, setVisorAbierto] = useState(false)
+  const [visorSrc, setVisorSrc] = useState(null)
 
   const { data: paquete, isLoading, isError } = useQuery({
     queryKey: ['paquete', id],
@@ -87,11 +87,8 @@ export default function DetallePaquete() {
     <ClienteLayout>
 
       {/* Visor de imagen a pantalla completa */}
-      {visorAbierto && paquete.foto_url && (
-        <ImageViewer
-          src={paquete.foto_url}
-          onClose={() => setVisorAbierto(false)}
-        />
+      {visorSrc && (
+        <ImageViewer src={visorSrc} onClose={() => setVisorSrc(null)} />
       )}
 
       {/* ── Header con foto ── */}
@@ -107,7 +104,7 @@ export default function DetallePaquete() {
 
         {/* Foto — clickeable para expandir */}
         <button
-          onClick={() => paquete.foto_url && setVisorAbierto(true)}
+          onClick={() => paquete.foto_url && setVisorSrc(paquete.foto_url)}
           className={`w-full h-56 bg-slate-800 block text-left
             ${paquete.foto_url ? 'cursor-pointer active:opacity-90' : 'cursor-default'}`}
         >
@@ -290,6 +287,25 @@ export default function DetallePaquete() {
               label="Monto cobrado"
               value={`$${paquete.monto_cobrado} USD`}
             />
+          )}
+
+          {/* Comprobante de entrega */}
+          {paquete.foto_entrega_url && (
+            <div className="pt-3">
+              <p className="text-xs text-slate-400 mb-2">Comprobante de entrega</p>
+              <button
+                onClick={() => setVisorSrc(paquete.foto_entrega_url)}
+                className="w-full relative active:opacity-90 transition"
+              >
+                <img src={paquete.foto_entrega_url} alt="Comprobante"
+                  className="w-full h-44 object-cover rounded-xl" />
+                <span className="absolute bottom-2 right-2 text-white text-[10px]
+                  font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(0,0,0,0.45)' }}>
+                  Toca para ampliar
+                </span>
+              </button>
+            </div>
           )}
         </div>
       )}
