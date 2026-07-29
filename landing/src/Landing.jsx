@@ -154,7 +154,7 @@ export default function Landing() {
             </div>
             <div className="ll-hero__actions">
               <a className="ll-btn ll-btn--sky" href={waLink('Hola, quiero cotizar un envío a Venezuela.')}>Cotizar envío</a>
-              <a className="ll-btn ll-btn--ghost" href={REGISTER_URL}>Registrarse</a>
+              <a className="ll-btn ll-btn--sky" href={REGISTER_URL}>Registrarse</a>
             </div>
           </div>
         </div>
