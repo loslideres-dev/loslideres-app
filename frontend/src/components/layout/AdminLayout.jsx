@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Package, Users, Truck, BarChart3, Settings, LogOut,
+  LayoutDashboard, Package, Wallet, Truck, BarChart3, Settings, LogOut,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
@@ -11,7 +11,7 @@ const TABS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard'    },
   { label: 'Paquetes',  icon: Package,         path: '/admin/paquetes'     },
   { label: 'Entregas',  icon: Truck,           path: '/conductor/entregas' },
-  { label: 'Usuarios',  icon: Users,           path: '/admin/usuarios'     },
+  { label: 'Cierres',   icon: Wallet,          path: '/admin/liquidaciones'},
   { label: 'Reportes',  icon: BarChart3,       path: '/admin/reportes'     },
 ]
 

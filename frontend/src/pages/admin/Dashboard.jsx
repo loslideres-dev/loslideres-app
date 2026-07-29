@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { Package, Truck, CheckCircle, Clock, RefreshCw, ChevronRight } from 'lucide-react'
+import { Package, Truck, CheckCircle, Clock, RefreshCw, ChevronRight, Users, Settings } from 'lucide-react'
 import { useDashboardStats, usePaquetesAdmin } from '../../hooks/usePaquetes'
 import AdminLayout from '../../components/layout/AdminLayout'
-import EstadoBadge from '../../components/ui/EstadoBadge'
 
 function StatCard({ icon: Icon, label, value, color, onClick }) {
   return (
@@ -22,10 +21,28 @@ function StatCard({ icon: Icon, label, value, color, onClick }) {
   )
 }
 
+function AccesoCard({ icon: Icon, label, desc, color, onClick }) {
+  return (
+    <button onClick={onClick}
+      className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm
+        active:scale-95 transition w-full text-left">
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: color + '20' }}>
+        <Icon size={22} style={{ color }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-800">{label}</p>
+        <p className="text-xs text-slate-400 leading-snug">{desc}</p>
+      </div>
+      <ChevronRight size={16} className="text-slate-300 flex-shrink-0" />
+    </button>
+  )
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const { data: stats = {}, isLoading: loadStats, refetch } = useDashboardStats()
-  const { data: recientes = [], isLoading: loadRec } = usePaquetesAdmin('RECIBIDO')
+  const { data: recientes = [] } = usePaquetesAdmin('RECIBIDO')
 
   return (
     <AdminLayout title="Dashboard">
@@ -54,6 +71,21 @@ export default function Dashboard() {
                 onClick={() => navigate('/admin/paquetes?estado=ENTREGADO')} />
             </div>
         }
+
+        {/* Accesos */}
+        <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">
+          GESTIÓN
+        </p>
+        <div className="space-y-2 mb-5">
+          <AccesoCard icon={Users} label="Usuarios"
+            desc="Clientes, bodegueros, conductores y administradores"
+            color="#8B5CF6"
+            onClick={() => navigate('/admin/usuarios')} />
+          <AccesoCard icon={Settings} label="Tarifas"
+            desc="Precios por tamaño y pago al bodeguero"
+            color="#0EA5E9"
+            onClick={() => navigate('/admin/tarifas')} />
+        </div>
 
         {/* Cola de tarifación */}
         {recientes.length > 0 && (

@@ -1,6 +1,36 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [0.5.0] — 2026-07-28
+
+### ✨ Nuevas funcionalidades
+
+* **Sistema de liquidaciones (cierres de pago)** — módulo completo para pagar a conductores y bodegueros.
+  - Pantalla "Cierres" en el navbar del admin (reemplaza "Usuarios").
+  - Tabs Bodegueros / Conductores, cada uno con su total pendiente, lista de personas con saldo y buscador.
+  - Modal de liquidación: monto del periodo, fechas, campo de notas, tarjeta plegable con los paquetes incluidos y confirmación en dos pasos.
+  - Historial de cierres anteriores por persona, con detalle completo al tocar cada uno.
+  - El contador de cada persona vuelve a cero tras el cierre. El historial se conserva siempre.
+  - Los administradores se excluyen de la lista de conductores (se asignan traslado $0).
+  - Toda la lógica (cálculo, marcado de paquetes y transacción) corre en Supabase via funciones `SECURITY DEFINER`.
+
+* **ReporteBodeguero rediseñado** — muestra el acumulado pendiente del periodo actual (desde el último cierre) y un historial de liquidaciones con fecha, paquetes y monto. El detalle de recepciones fue reemplazado por el historial de pagos.
+
+* **ReporteConductor rediseñado** — mismo patrón: periodo actual pendiente + historial de liquidaciones con detalle desplegable.
+
+* **ReporteAdmin — Estado de cuenta** — nueva sección en el tab Financiero con ingresos vs egresos (utilidad y margen), comisiones a bodegueros en COP separadas, deuda viva pendiente de liquidar y lo ya pagado en el periodo.
+
+* **ReporteAdmin — Por persona** — desglose de entregas e ingresos generados por cada conductor, y recepciones y comisión por cada bodeguero.
+
+* **ReporteAdmin — Tabs Operativo / Financiero** — las secciones del reporte se reorganizan en dos tabs. Operativo (operación, tendencia, rankings) y Financiero (resumen financiero, estado de cuenta, método de pago, por persona). El selector de periodo es compartido.
+
+* **Dashboard — sección Gestión** — accesos rápidos a Usuarios y Tarifas debajo de los KPIs, ahora que Usuarios salió del navbar.
+
+### 🗄️ Base de datos (SQL ejecutados)
+
+* `06_liquidaciones.sql` — tabla `liquidaciones`, columnas `liquidacion_conductor_id` / `liquidacion_bodeguero_id` en `paquetes`, índices parciales, RLS, funciones RPC `liquidar_conductor` y `liquidar_bodeguero`, vista `pendientes_liquidacion`.
+
+
 ## [0.4.2] — 2026-07-28
 
 ### ✨ Nuevas funcionalidades

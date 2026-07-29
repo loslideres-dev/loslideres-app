@@ -29,6 +29,7 @@ import PaquetesAdmin   from './pages/admin/PaquetesAdmin'
 import Tarifas         from './pages/admin/Tarifas'
 import Usuarios        from './pages/admin/Usuarios'
 import ReporteAdmin    from './pages/admin/ReporteAdmin'
+import Liquidaciones   from './pages/admin/Liquidaciones'
 
 // ── Guard ─────────────────────────────────────────────────────────────────────
 function PrivateRoute({ children, roles }) {
@@ -115,6 +116,9 @@ export default function App() {
         }/>
         <Route path="/admin/usuarios" element={
           <PrivateRoute roles={['admin']}><Usuarios /></PrivateRoute>
+        }/>
+        <Route path="/admin/liquidaciones" element={
+          <PrivateRoute roles={['admin']}><Liquidaciones /></PrivateRoute>
         }/>
         <Route path="/admin/reportes" element={
           <PrivateRoute roles={['admin']}><ReporteAdmin /></PrivateRoute>

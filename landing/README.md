@@ -73,7 +73,7 @@ Configuradas en Railway → servicio `loslideres-landing` → Variables. Las `VI
 |----------|-------------|
 | `VITE_APP_URL` | `https://app.loslideresencomiendas.com` |
 | `VITE_WHATSAPP` | `584246282123` (código país + número, sin `+`) |
-| `VITE_EMAIL` | `loslideresencomiendas@gmail.com` |
+| `VITE_EMAIL` | `soporte@loslideresencomiendas.com` |
 | `VITE_SUPABASE_URL` | `https://kcmasyggaaclpkojohky.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | `<anon key>` |
 

@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LogOut, ArrowLeft, Truck, BarChart3,
-  LayoutDashboard, Package, Users,
+  LayoutDashboard, Package, Wallet,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
@@ -82,7 +82,7 @@ function AdminNav() {
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard'    },
     { label: 'Paquetes',  icon: Package,         path: '/admin/paquetes'     },
     { label: 'Entregas',  icon: Truck,           path: '/conductor/entregas' },
-    { label: 'Usuarios',  icon: Users,           path: '/admin/usuarios'     },
+    { label: 'Cierres',   icon: Wallet,          path: '/admin/liquidaciones'},
     { label: 'Reportes',  icon: BarChart3,       path: '/admin/reportes'     },
   ]
   return <NavBar tabs={TABS} pathname={pathname} navigate={navigate} small />
