@@ -27,6 +27,8 @@ const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
 const APP_URL  = env.VITE_APP_URL  || 'https://loslideres-app-production.up.railway.app';
 const WHATSAPP = env.VITE_WHATSAPP || '584246282123'; // código país + número, sin +
 const EMAIL    = env.VITE_EMAIL    || 'soporte@loslideresencomiendas.com';
+// Ruta de registro dentro de la app. Ajustable por env si la ruta real cambia.
+const REGISTER_URL = `${APP_URL}${env.VITE_REGISTER_PATH || '/registro'}`;
 
 const waLink = (msg) =>
   `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
@@ -152,6 +154,7 @@ export default function Landing() {
             </div>
             <div className="ll-hero__actions">
               <a className="ll-btn ll-btn--sky" href={waLink('Hola, quiero cotizar un envío a Venezuela.')}>Cotizar envío</a>
+              <a className="ll-btn ll-btn--ghost" href={REGISTER_URL}>Registrarse</a>
             </div>
           </div>
         </div>

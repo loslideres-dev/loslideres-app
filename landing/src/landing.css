@@ -66,6 +66,10 @@
 }
 .ll-btn:active { transform: scale(.97); }
 .ll-btn--primary { background: var(--blue); color: #fff; }
+/* .ll a { color: inherit } tiene más especificidad que .ll-btn--primary,
+   así que el texto blanco se fuerza aquí. */
+.ll a.ll-btn--primary,
+.ll a.ll-btn--primary:hover { color: #fff; }
 .ll-btn--primary:hover { background: #0f4fa0; box-shadow: 0 6px 18px rgba(21,101,192,.28); }
 .ll-btn--sky { background: var(--sky); color: var(--navy); }
 .ll-btn--sky:hover { background: #38b6ee; }
@@ -420,7 +424,7 @@
   }
   .ll-hero__inner { padding-block: 54px 60px; }
   .ll-hero__badge { display: none; }
-  /* el botón 'Rastrear paquete' (ghost) queda sobre cielo claro en móvil: darle contraste */
+  /* el botón 'Registrarse' (ghost) queda sobre cielo claro en móvil: darle contraste */
   .ll-hero__actions .ll-btn--ghost {
     background: rgba(13,43,94,.6);
     color: #fff;
