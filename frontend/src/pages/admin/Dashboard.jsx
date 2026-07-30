@@ -1,6 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { Package, Truck, CheckCircle, Clock, RefreshCw, ChevronRight, Users, Settings } from 'lucide-react'
+import {
+  Package, Truck, CheckCircle, Clock, RefreshCw, ChevronRight,
+  Users, Settings, Building2,
+} from 'lucide-react'
 import { useDashboardStats, usePaquetesAdmin } from '../../hooks/usePaquetes'
+import { useAuthStore } from '../../store/authStore'
 import AdminLayout from '../../components/layout/AdminLayout'
 
 function StatCard({ icon: Icon, label, value, color, onClick }) {
@@ -43,6 +47,8 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { data: stats = {}, isLoading: loadStats, refetch } = useDashboardStats()
   const { data: recientes = [] } = usePaquetesAdmin('RECIBIDO')
+  const roles = useAuthStore(s => s.roles)
+  const esGerente = roles.includes('gerente')
 
   return (
     <AdminLayout title="Dashboard">
@@ -77,6 +83,12 @@ export default function Dashboard() {
           GESTIÓN
         </p>
         <div className="space-y-2 mb-5">
+          {esGerente && (
+            <AccesoCard icon={Building2} label="Gerencia"
+              desc="Consola de escritorio: contabilidad, socios y análisis"
+              color="#0D2B5E"
+              onClick={() => navigate('/gerencia')} />
+          )}
           <AccesoCard icon={Users} label="Usuarios"
             desc="Clientes, bodegueros, conductores y administradores"
             color="#8B5CF6"

@@ -1,35 +1,69 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 
+// ── Carga inmediata ───────────────────────────────────────────────────────────
+// Login es la primera pantalla de quien no tiene sesión. Diferirla solo
+// agregaría un spinner de más antes del formulario.
+import Login from './pages/auth/Login'
+
+// ── Carga diferida ────────────────────────────────────────────────────────────
+// Cada pantalla se descarga solo al navegar a ella. Un bodeguero con datos
+// móviles en Maicao ya no baja el código de reportes ni de gráficos.
+
 // Auth
-import Login           from './pages/auth/Login'
-import AuthCallback    from './pages/auth/AuthCallback'
-import ForgotPassword  from './pages/auth/ForgotPassword'
-import ConfirmarCorreo from './pages/auth/ConfirmarCorreo'
-import Onboarding      from './pages/auth/Onboarding'
+const AuthCallback    = lazy(() => import('./pages/auth/AuthCallback'))
+const ForgotPassword  = lazy(() => import('./pages/auth/ForgotPassword'))
+const ConfirmarCorreo = lazy(() => import('./pages/auth/ConfirmarCorreo'))
+const Onboarding      = lazy(() => import('./pages/auth/Onboarding'))
 
 // Cliente
-import Casillero       from './pages/cliente/Casillero'
-import PaquetesCliente from './pages/cliente/PaquetesCliente'
-import DetallePaquete  from './pages/cliente/DetallePaquete'
-import Perfil          from './pages/cliente/Perfil'
+const Casillero       = lazy(() => import('./pages/cliente/Casillero'))
+const PaquetesCliente = lazy(() => import('./pages/cliente/PaquetesCliente'))
+const DetallePaquete  = lazy(() => import('./pages/cliente/DetallePaquete'))
+const Perfil          = lazy(() => import('./pages/cliente/Perfil'))
 
 // Bodeguero
-import Recepcion       from './pages/bodeguero/Recepcion'
-import Registros       from './pages/bodeguero/Registros'
-import ReporteBodeguero from './pages/bodeguero/ReporteBodeguero'
+const Recepcion        = lazy(() => import('./pages/bodeguero/Recepcion'))
+const Registros        = lazy(() => import('./pages/bodeguero/Registros'))
+const ReporteBodeguero = lazy(() => import('./pages/bodeguero/ReporteBodeguero'))
 
 // Conductor
-import Entregas        from './pages/conductor/Entregas'
-import ReporteConductor from './pages/conductor/ReporteConductor'
+const Entregas         = lazy(() => import('./pages/conductor/Entregas'))
+const ReporteConductor = lazy(() => import('./pages/conductor/ReporteConductor'))
 
-// Admin
-import Dashboard       from './pages/admin/Dashboard'
-import PaquetesAdmin   from './pages/admin/PaquetesAdmin'
-import Tarifas         from './pages/admin/Tarifas'
-import Usuarios        from './pages/admin/Usuarios'
-import ReporteAdmin    from './pages/admin/ReporteAdmin'
-import Liquidaciones   from './pages/admin/Liquidaciones'
+// Admin — ReporteAdmin arrastra Recharts, la dependencia más pesada de la app.
+// Diferirlo es lo que más peso le quita al bundle inicial.
+const Dashboard     = lazy(() => import('./pages/admin/Dashboard'))
+const PaquetesAdmin = lazy(() => import('./pages/admin/PaquetesAdmin'))
+const Tarifas       = lazy(() => import('./pages/admin/Tarifas'))
+const Usuarios      = lazy(() => import('./pages/admin/Usuarios'))
+const Liquidaciones = lazy(() => import('./pages/admin/Liquidaciones'))
+const ReporteAdmin  = lazy(() => import('./pages/admin/ReporteAdmin'))
+
+// Gerencia — consola de escritorio. Todo el módulo va diferido: quien opera
+// desde el celular nunca descarga este código.
+const PanelGerencia   = lazy(() => import('./pages/gerencia/Panel'))
+const GerenciaGastos     = lazy(() => import('./pages/gerencia/Gastos'))
+const GerenciaResultados = lazy(() => import('./pages/gerencia/Resultados'))
+const GerenciaReparto    = lazy(() => import('./pages/gerencia/Reparto'))
+const GerenciaCierres    = lazy(() => import('./pages/gerencia/Cierres'))
+const GerenciaPaquetes   = lazy(() => import('./pages/gerencia/PaquetesGer'))
+const GerenciaUsuarios   = lazy(() => import('./pages/gerencia/UsuariosGer'))
+const GerenciaAjustes    = lazy(() => import('./pages/gerencia/Ajustes'))
+const GerenciaAuditoria  = lazy(() => import('./pages/gerencia/Auditoria'))
+const GerenciaSLA        = lazy(() => import('./pages/gerencia/SLA'))
+
+// ── Pantalla de carga entre rutas ─────────────────────────────────────────────
+function CargandoPantalla() {
+  return (
+    <div className="h-[100dvh] flex items-center justify-center"
+      style={{ background: '#F4F6FA' }}>
+      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent
+        rounded-full animate-spin" />
+    </div>
+  )
+}
 
 // ── Guard ─────────────────────────────────────────────────────────────────────
 function PrivateRoute({ children, roles }) {
@@ -58,7 +92,8 @@ function PrivateRoute({ children, roles }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={<CargandoPantalla />}>
+        <Routes>
 
         {/* Públicas */}
         <Route path="/login"                 element={<Login />} />
@@ -124,11 +159,44 @@ export default function App() {
           <PrivateRoute roles={['admin']}><ReporteAdmin /></PrivateRoute>
         }/>
 
+        {/* ── Gerencia (escritorio) ── */}
+        <Route path="/gerencia" element={
+          <PrivateRoute roles={['gerente']}><PanelGerencia /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/paquetes" element={
+          <PrivateRoute roles={['gerente']}><GerenciaPaquetes /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/sla" element={
+          <PrivateRoute roles={['gerente']}><GerenciaSLA /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/resultados" element={
+          <PrivateRoute roles={['gerente']}><GerenciaResultados /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/gastos" element={
+          <PrivateRoute roles={['gerente']}><GerenciaGastos /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/cierres" element={
+          <PrivateRoute roles={['gerente']}><GerenciaCierres /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/socios" element={
+          <PrivateRoute roles={['gerente']}><GerenciaReparto /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/usuarios" element={
+          <PrivateRoute roles={['gerente']}><GerenciaUsuarios /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/ajustes" element={
+          <PrivateRoute roles={['gerente']}><GerenciaAjustes /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/auditoria" element={
+          <PrivateRoute roles={['gerente']}><GerenciaAuditoria /></PrivateRoute>
+        }/>
+
         {/* Default */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
 
-      </Routes>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

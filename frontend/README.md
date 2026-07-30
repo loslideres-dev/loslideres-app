@@ -1,15 +1,9 @@
 # Los Líderes Encomiendas 📦
 > App multi-rol para gestión de encomiendas puerta a puerta, de Maicao (Colombia) a Maracaibo (Venezuela)
 
-![Status](https://img.shields.io/badge/status-beta-blue)
-![Version](https://img.shields.io/badge/version-v0.5.1-green)
+![Status](https://img.shields.io/badge/status-producción-green)
+![Version](https://img.shields.io/badge/version-v0.6.0-blue)
 ![Stack](https://img.shields.io/badge/stack-React%20%7C%20Supabase%20%7C%20Railway-orange)
-
-## Descripción
-
-Los Líderes Encomiendas digitaliza el negocio de encomiendas de Los Líderes: los paquetes que los clientes compran en tiendas online (Amazon, Shein, Temu) llegan a una bodega en Maicao, se registran con foto, medidas y tracking del courier, se les asigna un precio, y se entregan a domicilio en Maracaibo.
-
-Cuatro experiencias según el rol (cliente, bodeguero, administración y conductor), mobile-first. Landing pública con rastreo sin login en `www.loslideresencomiendas.com`.
 
 ## URLs en producción
 
@@ -17,7 +11,7 @@ Cuatro experiencias según el rol (cliente, bodeguero, administración y conduct
 |---|---|
 | **App** | https://app.loslideresencomiendas.com |
 | **Landing** | https://www.loslideresencomiendas.com |
-| **Respaldo app** | https://loslideres-app-production.up.railway.app |
+| **Gerencia** | https://app.loslideresencomiendas.com/gerencia |
 
 ## Stack
 
@@ -29,20 +23,34 @@ Cuatro experiencias según el rol (cliente, bodeguero, administración y conduct
 - **Mapas**: Google Maps (iframe + navegación)
 - **CI/CD**: GitHub + Railway (deploy automático en push a main)
 
-## Navbar del admin
+## Roles
+
+| Rol | Acceso |
+|---|---|
+| **cliente** | Casillero, paquetes, perfil |
+| **bodeguero** | Recepción, registros, reporte |
+| **conductor** | Entregas, reporte |
+| **admin** | Dashboard, paquetes, entregas, cierres, reportes |
+| **gerente** | Todo lo anterior + módulo de gerencia desktop |
+
+Un usuario puede tener varios roles simultáneamente.
+
+## Navbar del admin (móvil)
 
 ```
 Dashboard | Paquetes | Entregas | Cierres | Reportes
 ```
 
-## Roles y flujo
+## Módulo de Gerencia (desktop ≥1024px)
 
-| Rol | Qué hace |
-|---|---|
-| **Cliente** | Casillero LID-XXXX, dirección de bodega, estado de paquetes, notificaciones, contacto WhatsApp. |
-| **Bodeguero** | Recepción con foto + tracking, editar/eliminar en RECIBIDO, reporte de periodo pendiente e historial de liquidaciones. |
-| **Administración** | Tarifar, liquidar, gestionar usuarios (desde Dashboard), tarifas y métodos de pago (⚙️), reportes financieros y operativos. |
-| **Conductor** | Entregas con mapa desde la asignación, foto de entrega como comprobante, reporte de periodo pendiente e historial de liquidaciones. |
+```
+Panel | Paquetes | SLA y atascos
+      | Resultados | Gastos | Cierres
+      | Reparto
+      | Usuarios | Ajustes | Auditoría
+```
+
+Accesible desde `/gerencia`. Requiere rol `gerente`. En pantallas menores a 1024px muestra un aviso para abrir desde un computador.
 
 ## Estados de un paquete
 
@@ -50,72 +58,95 @@ Dashboard | Paquetes | Entregas | Cierres | Reportes
 RECIBIDO → TARIFADO → EN_TRANSITO → EN_REPARTO → ENTREGADO
 ```
 
-El paso a EN_TRANSITO lo hace el **conductor**. La dirección se congela al tarifar.
+- **RECIBIDO**: bodeguero lo registra en Maicao con foto, medidas y tracking del courier. Puede tener cobro a destino.
+- **TARIFADO**: admin asigna precio, método de pago, conductor y monto de traslado. La dirección se congela aquí.
+- **EN_TRANSITO**: conductor lo marca al salir de Maicao.
+- **EN_REPARTO**: conductor lo marca al llegar a Maracaibo.
+- **ENTREGADO**: conductor registra quién recibió y puede subir foto de entrega.
+
+## Cobro a destino
+
+Cuando un paquete llega con flete por cobrar (Servientrega cobro a destino):
+
+1. El bodeguero marca "cobro a destino", ingresa el monto en COP y toma foto de la guía.
+2. El admin ve el aviso al tarifar y ajusta el precio si corresponde.
+3. El monto se suma como devolución en la liquidación del bodeguero, separado de su comisión.
+4. El cliente ve una tarjeta ámbar en el detalle de su paquete explicando el cargo.
 
 ## Multi-moneda
 
-El negocio opera en USD. La infraestructura soporta COP y VES:
+El negocio tarifa en USD. La infraestructura soporta COP y VES:
 
-- Tabla `monedas` con toggle de activación.
-- Tabla `metodos_pago` atada a una moneda — habilitar/crear desde ⚙️ Tarifas sin redespliegue.
-- Tabla `tasas_cambio` con histórico por fecha.
-- Al cobrar en otra moneda: tasa congelada en el paquete (`tasa_aplicada`, `monto_cobrado_usd`). Los reportes nunca se recalculan con tasas nuevas.
+- Métodos de pago atados a una moneda, habilitables desde Ajustes sin redespliegue.
+- Tasas de cambio históricas: se congelan al cobrar, los reportes nunca se recalculan.
+- `monto_cobrado_usd` en cada paquete es el equivalente en dólares congelado.
 
 ## Sistema de liquidaciones
 
-Cada paquete se marca con `liquidacion_conductor_id` / `liquidacion_bodeguero_id` al ser liquidado. Lo pendiente = marca `NULL`. Cálculo atómico en Postgres via `SECURITY DEFINER`.
+Cada paquete se marca con `liquidacion_conductor_id` / `liquidacion_bodeguero_id` al liquidarse. Lo pendiente = marca `NULL`. Todo calculado en Postgres via `SECURITY DEFINER` — atómico e inalterable desde el cliente.
 
-## Funcionalidades
+Bodegueros cobran: comisión (tarifa × paquetes) + reembolso de fletes de cobro a destino.
 
-| Módulo | Feature | Versión |
-|---|---|---|
-| Auth | Login Email/Password + Google OAuth | v0.0.1 |
-| Auth | Onboarding cliente (tour + perfil + LID) | v0.0.1 |
-| Cliente | Casillero, paquetes con filtros, timeline | v0.0.1 |
-| Bodeguero | Recepción foto+tracking, editar/eliminar | v0.0.1 |
-| Admin | Dashboard, tarifación, usuarios | v0.0.1 |
-| Conductor | Entregas con mapa desde asignación | v0.3.0 |
-| Notificaciones | Campanita in-app por rol y evento | v0.3.0 |
-| Reportes | Conductor y bodeguero con filtro de fechas | v0.3.0 |
-| Paquetes | Tracking del courier + búsqueda doble | v0.4.0 |
-| Admin | Reporte del negocio con gráficos Recharts | v0.4.0 |
-| UX | Visor de imagen a pantalla completa | v0.4.2 |
-| Cliente | Botón WhatsApp de contacto en Casillero | v0.4.2 |
-| Liquidaciones | Cierres de pago conductores (USD) y bodegueros (COP) | v0.5.0 |
-| Reportes | Tabs Operativo/Financiero, estado de cuenta, por persona | v0.5.0 |
-| Conductor | Foto de entrega como comprobante | v0.5.1 |
-| Multi-moneda | Monedas, tasas y métodos configurables desde la UI | v0.5.1 |
-| Admin | Dirección congelada al tarifar | v0.5.1 |
-| UX | Header Entregas unificado para admin | v0.5.1 |
-| Cliente | Nombre en header del Casillero, navbar fijo en Perfil | v0.5.1 |
+## Contabilidad (Gerencia G2)
+
+- Registro de gastos con categoría, moneda y foto del comprobante.
+- Gasto informativo: se registra pero no reduce la utilidad distribuible.
+- Cierre mensual que congela todas las cifras. Un mes cerrado no cambia.
+- Fondo de reserva configurable (% de la utilidad antes de repartir).
+- Tasa de cambio registrada al cierre — los meses anteriores no se recalculan.
+
+## Reparto entre socios (Gerencia G3)
+
+- Participación con vigencia histórica: si se renegocia, los meses anteriores conservan el % con que se calcularon.
+- Las distribuciones se calculan al cerrar cada mes.
+- Registro de retiros por socio.
 
 ## Base de datos (tablas principales)
 
 | Tabla / Vista | Descripción |
 |---|---|
-| `paquetes` | Núcleo. Incluye tracking, foto entrega, dirección congelada, marcas de liquidación, cobro multi-moneda. |
-| `perfiles` | Usuarios con roles `TEXT[]`, código LID (solo clientes). |
-| `monedas` | USD (base), COP, VES. Toggle de activación. |
-| `metodos_pago` | Métodos atados a moneda. Habilitar sin redespliegue. |
+| `paquetes` | Núcleo. Incluye tracking, foto, dirección congelada, cobro a destino, multi-moneda, marcas de liquidación y cierre. |
+| `perfiles` | Usuarios con `roles TEXT[]`, código LID (solo clientes). |
+| `monedas` | USD (base activa), COP, VES (inactivas hasta que se necesiten). |
+| `metodos_pago` | Atados a moneda. Habilitar sin redespliegue. |
 | `tasas_cambio` | Histórico por moneda y fecha. |
-| `liquidaciones` | Cierres de pago con snapshot congelado. |
-| `tarifas` | S/M/L/XL en USD. |
-| `config_negocio` | Tarifa bodeguero COP, configurable sin redespliegue. |
+| `liquidaciones` | Cierres de pago. Incluye desglose comisión/reembolso para bodegueros. |
+| `categorias_gasto` | Categorías editables. "Gastos extras" como comodín. |
+| `gastos` | Egresos del negocio con foto de comprobante. |
+| `cierres_mensuales` | Snapshot congelado del P&L de cada mes. |
+| `socios` | Participación con vigencia histórica. |
+| `distribuciones` | Reparto por socio por cierre. |
+| `config_negocio` | Parámetros editables sin redespliegue. |
 | `notificaciones` | Campanita in-app (RLS: cada quien ve las suyas). |
-| `auditoria` | Append-only. |
-| `paquetes_con_cliente` | Vista con join a perfiles, métodos y monedas. |
-| `pendientes_liquidacion` | Vista: lo que se le debe a cada persona ahora. |
+| `auditoria` | Append-only. Registra quién cambió qué y cuándo. |
+| `paquetes_con_cliente` | Vista con join a perfiles, métodos, monedas y todos los campos. |
+| `pendientes_liquidacion` | Vista: lo que se le debe a cada persona ahora mismo. |
 | `rastrear_paquete()` | RPC pública para la landing (sin datos sensibles). |
-| `liquidar_conductor()` | Cierre atómico USD. SECURITY DEFINER. |
-| `liquidar_bodeguero()` | Cierre atómico COP. SECURITY DEFINER. |
+| `liquidar_conductor()` | Cierre atómico USD. |
+| `liquidar_bodeguero()` | Cierre atómico COP + reembolso de fletes. |
+| `calcular_resultado_mes()` | P&L del mes sin guardar (vista previa del cierre). |
+| `cerrar_mes()` | Congela cifras, aparta reserva, calcula distribuciones. |
+| `es_admin_o_gerente()` | Función de permisos de operación. |
+| `es_gerente()` | Función de permisos de gobierno. |
 | `tasa_vigente()` | Tasa más reciente de una moneda. |
 
-## Seguridad
+## Funcionalidades por versión
 
-- JWT via Supabase Auth. RLS en todas las tablas.
-- Rastreo público solo expone estado y fechas, nunca precio ni datos del cliente.
-- Fotos comprimidas a ≤300 KB en el navegador antes de subir.
-- Liquidaciones y conversiones de moneda corren en Postgres, nunca en el cliente.
+| Feature | Versión |
+|---|---|
+| Auth Email/Password + Google OAuth | v0.0.1 |
+| Onboarding cliente (tour + perfil + LID) | v0.0.1 |
+| Recepción con foto, tracking y medidas | v0.0.1 |
+| Entregas con mapa desde la asignación | v0.3.0 |
+| Notificaciones in-app por rol y evento | v0.3.0 |
+| Tracking del courier + búsqueda doble | v0.4.0 |
+| Reporte del negocio con gráficos | v0.4.0 |
+| Sistema de liquidaciones | v0.5.0 |
+| Reportes Operativo/Financiero, estado de cuenta | v0.5.0 |
+| Foto de entrega como comprobante | v0.5.1 |
+| Multi-moneda configurable desde la UI | v0.5.1 |
+| Módulo de Gerencia desktop (G1–G5) | v0.6.0 |
+| Cobro a destino | v0.6.0 |
 
 ## Setup local
 
@@ -123,8 +154,17 @@ Cada paquete se marca con `liquidacion_conductor_id` / `liquidacion_bodeguero_id
 git clone https://github.com/loslideres-dev/loslideres-app
 cd loslideres-app/frontend
 npm install
-cp .env.example .env
+cp .env.example .env   # completar con credenciales de Supabase
 npm run dev
+```
+
+### Variables de entorno
+
+```env
+VITE_SUPABASE_URL=https://kcmasyggaaclpkojohky.supabase.co
+VITE_SUPABASE_ANON_KEY=tu_anon_key
+VITE_APP_VERSION=0.6.0
+VITE_APP_NAME=Los Líderes Encomiendas
 ```
 
 ## Deploy
@@ -137,26 +177,41 @@ git tag vX.Y.Z
 git push origin main --tags
 ```
 
-Railway despliega automáticamente al detectar el push a main.
+Railway despliega automáticamente. El build number se genera con `gen-version.js`.
+
+## Migraciones SQL ejecutadas en producción
+
+```
+01_inicial.sql              Estructura base
+02_fix_trigger_roles.sql    Trigger corregido + limpieza de LIDs
+03_rls_bodeguero_editar.sql RLS para editar/eliminar en RECIBIDO
+05_tracking_externo.sql     Columna tracking + vista + RPC pública
+06_liquidaciones.sql        Sistema de liquidaciones
+07_foto_entrega.sql         Foto de entrega + dirección congelada
+08_multimoneda.sql          Monedas, tasas, métodos de pago
+09_rol_gerente.sql          Rol gerente + funciones de permisos
+10_contabilidad.sql         Gastos, cierres, socios, distribuciones
+11_cobro_destino.sql        Cobro a destino en bodega
+```
 
 ## Roadmap
 
-- **Gerencia**: módulo desktop con contabilidad, distribución a socios, auditoría e inteligencia de negocio. Rol `gerente`. Fases G1–G5.
 - **MVP3**: notificaciones automáticas por WhatsApp.
-- **PWA**: instalable, dark mode Samsung, push reales.
-- **Code splitting**: `React.lazy` antes de Gerencia.
+- **PWA**: app instalable, dark mode Samsung, push reales.
+- **Gerencia G2+**: tasa de cambio automática, exportaciones PDF.
+- **Módulo de taller**: vehículos, mantenimiento, combustible (cuando aplique).
 
 ## Pendientes conocidos
 
-- Módulo de Auditoría oculto del navbar (fix del join aplicado en el hook, se dejó oculto por decisión de producto).
-- Campo `email` en el detalle de usuario requiere que `useUsuarios` lo incluya desde `perfiles` o via `auth.users`.
-- Dark mode Samsung Internet via WhatsApp (solución definitiva requiere PWA).
+- Dark mode Samsung Internet via WhatsApp (requiere PWA).
+- Campo `email` en detalle de usuario del admin (requiere join con `auth.users`).
+- Auditoría: los triggers de BD que registran cambios automáticamente están pendientes para G4.
 
 ## Autor
 
 | Rol | Responsable |
 |---|---|
-| Producto + Frontend + Backend + Infraestructura | José Francisco Urdaneta |
+| Producto + Frontend + Backend + Infraestructura + Procesos | José Francisco Urdaneta |
 
 ---
 

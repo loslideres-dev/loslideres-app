@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Package, Loader2, MessageCircle, Phone, MapPin, User, Navigation, Search, X } from 'lucide-react'
+import {
+  Package, Loader2, MessageCircle, Phone, MapPin, User, Navigation, Search, X,
+  Receipt, FileText,
+} from 'lucide-react'
 import { usePaquetesAdmin, useTarifar, useMarcarEntregado } from '../../hooks/usePaquetes'
 import { useConductores } from '../../hooks/usePerfiles'
 import { useAuthStore } from '../../store/authStore'
@@ -390,6 +393,39 @@ export default function PaquetesAdmin() {
             )}
           </div>
 
+          {/* ── COBRO A DESTINO ── */}
+          {modal.cobro_destino && (
+            <div className="rounded-xl overflow-hidden mb-5"
+              style={{ border: '2px solid #FDE68A', background: '#FFFBEB' }}>
+              <div className="px-4 py-3 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center
+                  flex-shrink-0" style={{ background: '#FEF3C7' }}>
+                  <Receipt size={17} style={{ color: '#B45309' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: '#92400E' }}>
+                    Llegó con cobro a destino
+                  </p>
+                  <p className="text-lg font-black" style={{ color: '#B45309' }}>
+                    ${Number(modal.monto_cobro_destino ?? 0).toLocaleString('es-CO')}
+                    <span className="text-xs font-normal ml-1">COP</span>
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: '#B45309' }}>
+                    El bodeguero pagó este flete. Se le devuelve en su liquidación.
+                  </p>
+                </div>
+              </div>
+              {modal.comprobante_cobro_url && (
+                <button onClick={() => setVisorSrc(modal.comprobante_cobro_url)}
+                  className="w-full flex items-center justify-center gap-2 py-3
+                    text-sm font-semibold active:scale-95 transition"
+                  style={{ borderTop: '1px solid #FDE68A', color: '#92400E' }}>
+                  <FileText size={16} /> Ver la guía del flete
+                </button>
+              )}
+            </div>
+          )}
+
           {/* ── DATOS DEL PAQUETE ── */}
           <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
             PAQUETE
@@ -438,6 +474,16 @@ export default function PaquetesAdmin() {
                       ${getPrecioSugerido(tarifas, modal.tamanio) ?? '—'} USD
                     </span>
                   </p>
+                  {modal.cobro_destino && (
+                    <p className="text-xs mb-2 px-3 py-2 rounded-lg"
+                      style={{ background: '#FFFBEB', color: '#92400E' }}>
+                      Recuerda: este paquete costó{' '}
+                      <span className="font-bold">
+                        ${Number(modal.monto_cobro_destino ?? 0).toLocaleString('es-CO')} COP
+                      </span>{' '}
+                      de flete. Considéralo al fijar el precio.
+                    </p>
+                  )}
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2
                       text-slate-400 text-sm font-bold">$</span>

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import {
   Camera, Image as ImageIcon, Search, Package, Check, X, Loader2, AlertCircle,
+  Receipt, FileText,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useBuscarCliente } from '../../hooks/usePerfiles'
@@ -46,6 +47,16 @@ export default function Recepcion() {
     largo_cm: '', ancho_cm: '', alto_cm: '', peso_kg: '',
     tamanio: '', observaciones: '',
   })
+
+  // Cobro a destino: el flete que el bodeguero paga de su bolsillo al recibir
+  const [cobroDestino, setCobroDestino] = useState(false)
+  const [montoCobro,   setMontoCobro]   = useState('')
+  const [guiaBlob,     setGuiaBlob]     = useState(null)
+  const [guiaPreview,  setGuiaPreview]  = useState(null)
+  const [guiaKB,       setGuiaKB]       = useState(null)
+  const [procesandoGuia, setProcesandoGuia] = useState(false)
+  const guiaCamRef = useRef(null)
+  const guiaGalRef = useRef(null)
   const [tamanioManual, setTamanioManual] = useState(false)
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' })
   const [ultimoRegistro, setUltimoRegistro] = useState(null)
@@ -93,6 +104,32 @@ export default function Recepcion() {
     setFotoBlob(null); setFotoPreview(null); setFotoKB(null); setErrorFoto('')
   }
 
+  // ── Foto de la guía del flete ────────────────────────────────────────────────
+  const handleGuia = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setProcesandoGuia(true)
+    try {
+      const { blob, sizeKB } = await comprimirImagen(file, { maxKB: MAX_KB })
+      setGuiaBlob(blob)
+      setGuiaKB(sizeKB)
+      setGuiaPreview(URL.createObjectURL(blob))
+    } catch {
+      setToast({ show: true, msg: 'Error al procesar la guía', type: 'error' })
+    } finally {
+      setProcesandoGuia(false)
+    }
+  }
+
+  const quitarGuia = () => {
+    setGuiaBlob(null); setGuiaPreview(null); setGuiaKB(null)
+  }
+
+  const limpiarCobro = () => {
+    setCobroDestino(false); setMontoCobro(''); quitarGuia()
+  }
+
   // ── Guardar: sube la foto y crea el paquete ─────────────────────────────────
   const handleGuardar = async () => {
     if (!clienteSel || !fotoBlob || !form.tamanio) return
@@ -108,7 +145,20 @@ export default function Recepcion() {
         .from('paquetes-fotos')
         .getPublicUrl(path)
 
-      // 2. Insertar el paquete
+      // 2. Si hay cobro a destino, subir la guía del flete
+      let comprobanteUrl = null
+      if (cobroDestino && guiaBlob) {
+        const pathGuia = `guia_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`
+        const { error: errGuia } = await supabase.storage
+          .from('paquetes-fotos')
+          .upload(pathGuia, guiaBlob, { contentType: 'image/jpeg', upsert: false })
+        if (errGuia) throw errGuia
+        const { data: { publicUrl: urlGuia } } = supabase.storage
+          .from('paquetes-fotos').getPublicUrl(pathGuia)
+        comprobanteUrl = urlGuia
+      }
+
+      // 3. Insertar el paquete
       const data = await registrar({
         clienteId:     clienteSel.id,
         bodegueroId:   user.id,
@@ -122,9 +172,16 @@ export default function Recepcion() {
         peso_kg:       parseFloat(form.peso_kg)  || null,
         tamanio:       form.tamanio,
         observaciones: form.observaciones.trim() || null,
+        cobro_destino:         cobroDestino,
+        monto_cobro_destino:   cobroDestino ? parseFloat(montoCobro) : null,
+        comprobante_cobro_url: comprobanteUrl,
       })
 
-      setUltimoRegistro({ codigo: data.codigo, cliente: clienteSel.nombre })
+      setUltimoRegistro({
+        codigo: data.codigo,
+        cliente: clienteSel.nombre,
+        cobro: cobroDestino ? parseFloat(montoCobro) : null,
+      })
       setStep(3)
     } catch (err) {
       console.error(err)
@@ -141,9 +198,14 @@ export default function Recepcion() {
       largo_cm: '', ancho_cm: '', alto_cm: '', peso_kg: '',
       tamanio: '', observaciones: '',
     })
+    limpiarCobro()
   }
 
-  const puedeGuardar = clienteSel && fotoBlob && form.tamanio && !procesando && !guardando
+  const cobroCompleto = !cobroDestino
+    || (parseFloat(montoCobro) > 0 && !!guiaBlob)
+
+  const puedeGuardar = clienteSel && fotoBlob && form.tamanio
+    && cobroCompleto && !procesando && !procesandoGuia && !guardando
 
   return (
     <BodegueroLayout>
@@ -389,6 +451,127 @@ export default function Recepcion() {
               S: hasta 30 cm · M: hasta 50 cm · L: hasta 80 cm · XL: más grande
             </p>
 
+            {/* ── COBRO A DESTINO ── */}
+            <input ref={guiaCamRef} type="file" accept="image/*" capture="environment"
+              className="hidden" onChange={handleGuia} />
+            <input ref={guiaGalRef} type="file" accept="image/*"
+              className="hidden" onChange={handleGuia} />
+
+            <div className="rounded-2xl mb-4 overflow-hidden"
+              style={{
+                border: cobroDestino ? '2px solid #B45309' : '1px solid #E2E8F0',
+                background: cobroDestino ? '#FFFBEB' : '#FFFFFF',
+              }}>
+
+              {/* Interruptor */}
+              <button
+                onClick={() => cobroDestino ? limpiarCobro() : setCobroDestino(true)}
+                className="w-full px-4 py-3.5 flex items-center gap-3 text-left">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center
+                  flex-shrink-0"
+                  style={{ background: cobroDestino ? '#FEF3C7' : '#F4F6FA' }}>
+                  <Receipt size={17}
+                    style={{ color: cobroDestino ? '#B45309' : '#94A3B8' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold"
+                    style={{ color: cobroDestino ? '#92400E' : '#334155' }}>
+                    Cobro a destino
+                  </p>
+                  <p className="text-xs"
+                    style={{ color: cobroDestino ? '#B45309' : '#94A3B8' }}>
+                    Pagaste el flete al recibir este paquete
+                  </p>
+                </div>
+                <div className="w-11 h-6 rounded-full transition relative flex-shrink-0"
+                  style={{ background: cobroDestino ? '#B45309' : '#CBD5E1' }}>
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white
+                    transition-all ${cobroDestino ? 'left-[22px]' : 'left-0.5'}`} />
+                </div>
+              </button>
+
+              {/* Monto y guía */}
+              {cobroDestino && (
+                <div className="px-4 pb-4 space-y-3"
+                  style={{ borderTop: '1px solid #FDE68A' }}>
+
+                  <div className="pt-3">
+                    <p className="text-xs font-semibold mb-1.5"
+                      style={{ color: '#92400E' }}>
+                      ¿Cuánto pagaste? *
+                    </p>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2
+                        text-slate-400 text-sm">$</span>
+                      <input type="number" inputMode="numeric" value={montoCobro}
+                        onChange={e => setMontoCobro(e.target.value)}
+                        placeholder="0"
+                        className="w-full pl-9 pr-14 py-3 rounded-xl bg-white text-lg
+                          font-bold outline-none focus:ring-2"
+                        style={{ border: '1px solid #FDE68A' }} />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2
+                        text-slate-400 text-xs">COP</span>
+                    </div>
+                    <p className="text-xs mt-1.5" style={{ color: '#B45309' }}>
+                      Este monto se te devuelve completo en tu liquidación,
+                      además de tu comisión.
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold mb-1.5"
+                      style={{ color: '#92400E' }}>
+                      Foto de la guía o el recibo *
+                    </p>
+                    {guiaPreview ? (
+                      <div className="relative">
+                        <img src={guiaPreview} alt="Guía"
+                          className="w-full h-40 object-cover rounded-xl" />
+                        <button onClick={quitarGuia}
+                          className="absolute top-2 right-2 w-8 h-8 rounded-full
+                            flex items-center justify-center active:scale-90"
+                          style={{ background: 'rgba(0,0,0,0.55)' }}>
+                          <X size={15} className="text-white" />
+                        </button>
+                        {guiaKB != null && (
+                          <span className="absolute bottom-2 left-2 text-white text-[10px]
+                            font-semibold px-2 py-0.5 rounded-full"
+                            style={{ background: 'rgba(0,0,0,0.5)' }}>
+                            {guiaKB} KB ✓
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => guiaCamRef.current?.click()}
+                          disabled={procesandoGuia}
+                          className="py-3 rounded-xl bg-white flex items-center
+                            justify-center gap-2 text-xs font-medium active:scale-95
+                            disabled:opacity-50"
+                          style={{ border: '2px dashed #FDE68A', color: '#B45309' }}>
+                          {procesandoGuia
+                            ? <Loader2 size={15} className="animate-spin" />
+                            : <Camera size={15} />}
+                          Tomar foto
+                        </button>
+                        <button onClick={() => guiaGalRef.current?.click()}
+                          disabled={procesandoGuia}
+                          className="py-3 rounded-xl bg-white flex items-center
+                            justify-center gap-2 text-xs font-medium active:scale-95
+                            disabled:opacity-50"
+                          style={{ border: '2px dashed #FDE68A', color: '#B45309' }}>
+                          <ImageIcon size={15} /> Galería
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-xs mt-1.5" style={{ color: '#B45309' }}>
+                      Administración la revisa para verificar el pago.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* ── OBSERVACIONES ── */}
             <textarea placeholder="Observaciones (opcional)"
               value={form.observaciones} rows={2}
@@ -406,6 +589,20 @@ export default function Recepcion() {
                 ? <><Loader2 size={18} className="animate-spin" /> Guardando...</>
                 : <><Check size={18} /> Registrar paquete</>}
             </button>
+
+            {cobroDestino && !cobroCompleto && (
+              <div className="mt-3 px-4 py-3 rounded-xl flex gap-2.5"
+                style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                <FileText size={15} className="flex-shrink-0 mt-0.5"
+                  style={{ color: '#B45309' }} />
+                <p className="text-xs leading-relaxed" style={{ color: '#92400E' }}>
+                  Para registrar con cobro a destino falta{' '}
+                  {!(parseFloat(montoCobro) > 0) && 'el monto que pagaste'}
+                  {!(parseFloat(montoCobro) > 0) && !guiaBlob && ' y '}
+                  {!guiaBlob && 'la foto de la guía'}.
+                </p>
+              </div>
+            )}
 
             {!fotoBlob && (
               <p className="text-xs text-center text-slate-400 mt-2">
@@ -430,6 +627,19 @@ export default function Recepcion() {
                 <span className="font-mono font-semibold">{ultimoRegistro.codigo}</span>
                 {' '}· {ultimoRegistro.cliente}
               </p>
+            )}
+            {ultimoRegistro?.cobro > 0 && (
+              <div className="px-4 py-3 rounded-xl mb-4 flex items-center gap-2.5"
+                style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                <Receipt size={16} style={{ color: '#B45309' }} />
+                <p className="text-xs text-left" style={{ color: '#92400E' }}>
+                  Se registró el flete de{' '}
+                  <span className="font-bold">
+                    ${ultimoRegistro.cobro.toLocaleString('es-CO')} COP
+                  </span>.
+                  Se te devuelve en tu próxima liquidación.
+                </p>
+              </div>
             )}
             <p className="text-slate-400 text-xs mb-8">
               Administración lo verá en su bandeja para asignarle el precio.

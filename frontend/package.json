@@ -1,11 +1,9 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.6.0",
   "type": "module",
-  "engines": {
-    "node": "20.x"
-  },
+  "engines": { "node": "20.x" },
   "scripts": {
     "prebuild": "node gen-version.js",
     "predev": "node gen-version.js",

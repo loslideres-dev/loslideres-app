@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   Truck, Warehouse, Search, X, Loader2, Check, Wallet,
   Calendar, History, ChevronRight, ChevronDown, Package, AlertTriangle,
+  Receipt, FileText, X as XIcon,
 } from 'lucide-react'
 import {
   usePendientesLiquidacion, useLiquidaciones, useLiquidar,
@@ -38,6 +39,7 @@ export default function Liquidaciones() {
   const [aLiquidar, setALiquidar] = useState(null)   // fila de pendientes
   const [verLiq,    setVerLiq]    = useState(null)   // liquidación del historial
   const [toast,     setToast]     = useState({ show: false, msg: '', type: 'success' })
+  const [verGuia,   setVerGuia]   = useState(null)
 
   const { data: pendientes = [], isLoading: loadPend } = usePendientesLiquidacion(tipo)
   const { data: historial  = [], isLoading: loadHist } = useLiquidaciones({ tipo })
@@ -159,6 +161,14 @@ export default function Liquidaciones() {
                       {p.cantidad_paquetes} {p.cantidad_paquetes === 1 ? 'paquete' : 'paquetes'}
                       {' · desde '}{fechaCorta(p.desde)}
                     </p>
+                    {Number(p.reembolsos_cop) > 0 && (
+                      <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5
+                        rounded text-[10px] font-bold"
+                        style={{ background: '#FEF3C7', color: '#B45309' }}>
+                        <Receipt size={9} />
+                        {p.paquetes_con_cobro} con flete
+                      </span>
+                    )}
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-base font-black"
@@ -225,7 +235,29 @@ export default function Liquidaciones() {
           tipo={tipo}
           onClose={() => setALiquidar(null)}
           onToast={(msg, type = 'success') => setToast({ show: true, msg, type })}
+          onVerGuia={setVerGuia}
         />
+      )}
+
+      {/* ── Visor de la guía del flete ── */}
+      {verGuia && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.92)' }}
+          onClick={() => setVerGuia(null)}>
+          <button onClick={() => setVerGuia(null)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center
+              justify-center active:scale-90"
+            style={{ background: 'rgba(255,255,255,0.15)' }}>
+            <XIcon size={20} className="text-white" />
+          </button>
+          <div className="text-center" onClick={e => e.stopPropagation()}>
+            <p className="text-white/60 text-[11px] font-semibold tracking-wider mb-2">
+              COMPROBANTE DEL FLETE
+            </p>
+            <img src={verGuia} alt="Guía"
+              className="max-w-full max-h-[85vh] object-contain rounded-xl" />
+          </div>
+        </div>
       )}
 
       {/* ── Modal: detalle de una liquidación pasada ── */}
@@ -233,6 +265,7 @@ export default function Liquidaciones() {
         <ModalDetalleLiquidacion
           liquidacion={verLiq}
           onClose={() => setVerLiq(null)}
+          onVerGuia={setVerGuia}
         />
       )}
     </AdminLayout>
@@ -242,7 +275,7 @@ export default function Liquidaciones() {
 // ═══════════════════════════════════════════════════════════════════════════
 // Modal de confirmación de pago
 // ═══════════════════════════════════════════════════════════════════════════
-function ModalLiquidar({ pendiente, tipo, onClose, onToast }) {
+function ModalLiquidar({ pendiente, tipo, onClose, onToast, onVerGuia }) {
   const [notas, setNotas] = useState('')
   const [confirmando, setConfirmando] = useState(false)
 
@@ -285,6 +318,40 @@ function ModalLiquidar({ pendiente, tipo, onClose, onToast }) {
             </p>
           </div>
 
+          {/* Desglose: trabajo vs devolución */}
+          {!esConductor && Number(pendiente.reembolsos_cop) > 0 && (
+            <div className="bg-white rounded-xl overflow-hidden">
+              <div className="px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Comisión</p>
+                  <p className="text-xs text-slate-400">
+                    {pendiente.cantidad_paquetes} paquetes
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-slate-800">
+                  {fmtCOP(pendiente.comision_cop)}
+                </p>
+              </div>
+              <div className="px-4 py-3 flex items-center justify-between"
+                style={{ background: '#FFFBEB', borderTop: '1px solid #FDE68A' }}>
+                <div className="flex items-center gap-2">
+                  <Receipt size={14} style={{ color: '#B45309' }} />
+                  <div>
+                    <p className="text-sm" style={{ color: '#92400E' }}>
+                      Devolución de fletes
+                    </p>
+                    <p className="text-xs" style={{ color: '#B45309' }}>
+                      {pendiente.paquetes_con_cobro} con cobro a destino
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-bold" style={{ color: '#B45309' }}>
+                  {fmtCOP(pendiente.reembolsos_cop)}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Periodo */}
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-white rounded-xl p-3">
@@ -318,6 +385,7 @@ function ModalLiquidar({ pendiente, tipo, onClose, onToast }) {
             esConductor={esConductor}
             desde={pendiente.desde}
             hasta={pendiente.hasta}
+            onVerGuia={onVerGuia}
           />
 
           <button onClick={() => setConfirmando(true)}
@@ -373,7 +441,7 @@ function ModalLiquidar({ pendiente, tipo, onClose, onToast }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Modal de detalle de una liquidación ya registrada
 // ═══════════════════════════════════════════════════════════════════════════
-function ModalDetalleLiquidacion({ liquidacion, onClose }) {
+function ModalDetalleLiquidacion({ liquidacion, onClose, onVerGuia }) {
   const esConductor = liquidacion.tipo === 'conductor'
   const { data: paquetes = [], isLoading } =
     usePaquetesDeLiquidacion(liquidacion.id, liquidacion.tipo)
@@ -430,6 +498,7 @@ function ModalDetalleLiquidacion({ liquidacion, onClose }) {
           esConductor={esConductor}
           desde={liquidacion.fecha_inicio}
           hasta={liquidacion.fecha_cierre}
+          onVerGuia={onVerGuia}
         />
       </div>
     </Modal>
@@ -443,9 +512,10 @@ function ModalDetalleLiquidacion({ liquidacion, onClose }) {
 // despliega la lista completa. Mantiene el modal corto y el botón de pago
 // visible sin tener que hacer scroll.
 // ═══════════════════════════════════════════════════════════════════════════
-function PaquetesPlegable({ paquetes, isLoading, esConductor, desde, hasta }) {
+function PaquetesPlegable({ paquetes, isLoading, esConductor, desde, hasta, onVerGuia }) {
   const [abierto, setAbierto] = useState(false)
   const cantidad = paquetes.length
+  const conFlete = paquetes.filter(p => p.cobro_destino).length
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
@@ -466,6 +536,7 @@ function PaquetesPlegable({ paquetes, isLoading, esConductor, desde, hasta }) {
             {desde && hasta
               ? `Del ${fechaCorta(desde)} al ${fechaCorta(hasta)}`
               : 'Ver el detalle'}
+            {conFlete > 0 && ` · ${conFlete} con flete`}
           </p>
         </div>
         <ChevronDown size={18}
@@ -480,8 +551,13 @@ function PaquetesPlegable({ paquetes, isLoading, esConductor, desde, hasta }) {
             <div className="max-h-64 overflow-y-auto divide-y divide-slate-50">
               {paquetes.map(p => (
                 <div key={p.id}
-                  className="px-4 py-2.5 flex items-center justify-between">
-                  <div className="min-w-0">
+                  className="px-4 py-2.5 flex items-center gap-2.5"
+                  style={{ background: p.cobro_destino ? '#FFFBEB' : undefined }}>
+                  {p.cobro_destino && (
+                    <span className="w-1 h-8 rounded-full flex-shrink-0"
+                      style={{ background: '#B45309' }} />
+                  )}
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs font-mono text-slate-600 truncate">
                       {p.tracking_externo ?? p.codigo}
                     </p>
@@ -490,6 +566,24 @@ function PaquetesPlegable({ paquetes, isLoading, esConductor, desde, hasta }) {
                       {p.tamanio ? ` · ${p.tamanio}` : ''}
                     </p>
                   </div>
+
+                  {p.cobro_destino && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="text-[11px] font-bold"
+                        style={{ color: '#B45309' }}>
+                        +{fmtCOP(p.monto_cobro_destino)}
+                      </span>
+                      {p.comprobante_cobro_url && onVerGuia && (
+                        <button onClick={() => onVerGuia(p.comprobante_cobro_url)}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold
+                            flex items-center gap-1 active:scale-95"
+                          style={{ background: '#FEF3C7', color: '#92400E' }}>
+                          <FileText size={10} /> Guía
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {esConductor && (
                     <p className="text-xs font-bold flex-shrink-0"
                       style={{ color: '#1B7A3E' }}>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Package, DollarSign, History, Check, Calendar, Clock, ChevronRight,
+  Package, DollarSign, History, Check, Calendar, Clock, ChevronRight, Receipt,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { usePendienteBodeguero } from '../../hooks/useReportes'
@@ -59,21 +59,49 @@ export default function ReporteBodeguero() {
               </div>
             </div>
 
-            {/* Info del periodo */}
+            {/* Desglose del periodo */}
             <div className="bg-white rounded-2xl p-4 shadow-sm mb-5 space-y-2.5">
               <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Tu comisión</p>
+                  <p className="text-xs text-slate-400">
+                    {pendiente?.totalRecibidos ?? 0} paquetes ×{' '}
+                    {fmtCOP(pendiente?.tarifaPorPaquete ?? 0)}
+                  </p>
+                </div>
+                <p className="text-base font-bold text-slate-800">
+                  {fmtCOP(pendiente?.comision ?? 0)}
+                </p>
+              </div>
+
+              {(pendiente?.reembolsos ?? 0) > 0 && (
+                <div className="flex items-center justify-between pt-2.5"
+                  style={{ borderTop: '1px solid #F1F5F9' }}>
+                  <div className="flex items-center gap-2">
+                    <Receipt size={15} style={{ color: '#B45309' }} />
+                    <div>
+                      <p className="text-sm" style={{ color: '#92400E' }}>
+                        Fletes que pagaste
+                      </p>
+                      <p className="text-xs" style={{ color: '#B45309' }}>
+                        {pendiente.paquetesConCobro} con cobro a destino
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-base font-bold" style={{ color: '#B45309' }}>
+                    {fmtCOP(pendiente.reembolsos)}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2.5"
+                style={{ borderTop: '1px solid #F1F5F9' }}>
                 <div className="flex items-center gap-2">
                   <Clock size={14} className="text-slate-400" />
                   <p className="text-sm text-slate-500">Acumulando desde</p>
                 </div>
                 <p className="text-sm font-bold text-slate-800">
                   {pendiente?.desde ? fechaCorta(pendiente.desde) : 'Sin movimientos'}
-                </p>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-                <p className="text-sm text-slate-500">Tarifa por paquete</p>
-                <p className="text-sm font-bold text-slate-800">
-                  {fmtCOP(pendiente?.tarifaPorPaquete ?? 0)} COP
                 </p>
               </div>
             </div>
@@ -173,14 +201,45 @@ function ModalDetalle({ liquidacion, onClose }) {
           </div>
         </div>
 
-        {liquidacion.tarifa_aplicada && (
+        {Number(liquidacion.reembolsos_cop) > 0 ? (
+          <div className="bg-white rounded-xl overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-600">Comisión</p>
+                <p className="text-xs text-slate-400">
+                  {liquidacion.cantidad_paquetes} paquetes
+                </p>
+              </div>
+              <p className="text-sm font-bold text-slate-800">
+                {fmtCOP(liquidacion.comision_cop)}
+              </p>
+            </div>
+            <div className="px-4 py-3 flex items-center justify-between"
+              style={{ background: '#FFFBEB', borderTop: '1px solid #FDE68A' }}>
+              <div className="flex items-center gap-2">
+                <Receipt size={14} style={{ color: '#B45309' }} />
+                <div>
+                  <p className="text-sm" style={{ color: '#92400E' }}>
+                    Fletes devueltos
+                  </p>
+                  <p className="text-xs" style={{ color: '#B45309' }}>
+                    {liquidacion.paquetes_con_cobro} paquetes
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm font-bold" style={{ color: '#B45309' }}>
+                {fmtCOP(liquidacion.reembolsos_cop)}
+              </p>
+            </div>
+          </div>
+        ) : liquidacion.tarifa_aplicada ? (
           <div className="bg-white rounded-xl px-4 py-3 flex items-center justify-between">
             <p className="text-sm text-slate-500">Tarifa aplicada</p>
             <p className="text-sm font-bold text-slate-800">
               {fmtCOP(liquidacion.tarifa_aplicada)} COP
             </p>
           </div>
-        )}
+        ) : null}
 
         {liquidacion.notas && (
           <div className="bg-white rounded-xl px-4 py-3">
@@ -197,8 +256,8 @@ function ModalDetalle({ liquidacion, onClose }) {
             <div className="space-y-1.5 max-h-64 overflow-y-auto">
               {paquetes.map(p => (
                 <div key={p.id}
-                  className="bg-white rounded-xl px-4 py-2.5 flex items-center
-                    justify-between">
+                  className="rounded-xl px-4 py-2.5 flex items-center justify-between"
+                  style={{ background: p.cobro_destino ? '#FFFBEB' : '#FFFFFF' }}>
                   <div className="min-w-0">
                     <p className="text-xs font-mono text-slate-500 truncate">
                       {p.tracking_externo ?? p.codigo}
@@ -208,10 +267,16 @@ function ModalDetalle({ liquidacion, onClose }) {
                       {p.tamanio ? ` · ${p.tamanio}` : ''}
                     </p>
                   </div>
-                  <p className="text-xs font-bold flex-shrink-0"
-                    style={{ color: '#1B7A3E' }}>
-                    +{fmtCOP(liquidacion.tarifa_aplicada ?? 0)}
-                  </p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs font-bold" style={{ color: '#1B7A3E' }}>
+                      +{fmtCOP(liquidacion.tarifa_aplicada ?? 0)}
+                    </p>
+                    {p.cobro_destino && (
+                      <p className="text-[10px] font-bold" style={{ color: '#B45309' }}>
+                        +{fmtCOP(p.monto_cobro_destino)} flete
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

@@ -153,7 +153,12 @@ export function useRegistrarPaquete() {
         evento:    'paquete_registrado',
         entidad:   'paquetes',
         entidadId: data.id,
-        valorNuevo: { codigo, cliente_id: clienteId, tamanio: resto.tamanio, tracking_externo: resto.tracking_externo },
+        valorNuevo: {
+          codigo, cliente_id: clienteId, tamanio: resto.tamanio,
+          tracking_externo: resto.tracking_externo,
+          cobro_destino: resto.cobro_destino ?? false,
+          monto_cobro_destino: resto.monto_cobro_destino ?? null,
+        },
       })
       // Notificar al cliente y a los admins
       await crearNotificacion({
@@ -163,10 +168,13 @@ export function useRegistrarPaquete() {
         mensaje:   `El paquete ${codigoCliente} fue recibido en Maicao. Pronto tendrá precio asignado.`,
         paqueteId: data.id,
       })
+      const avisoCobro = resto.cobro_destino && resto.monto_cobro_destino
+        ? ` Llegó con cobro a destino de $${Number(resto.monto_cobro_destino).toLocaleString('es-CO')} COP que el bodeguero pagó.`
+        : ''
       await notificarAdmins({
         tipo:    'paquete_recibido',
         titulo:  'Nuevo paquete en bodega',
-        mensaje: `Se registró el paquete ${codigo}. Pendiente por tarifar.`,
+        mensaje: `Se registró el paquete ${codigo}. Pendiente por tarifar.${avisoCobro}`,
         paqueteId: data.id,
       })
       return data

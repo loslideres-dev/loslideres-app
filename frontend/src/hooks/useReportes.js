@@ -52,17 +52,26 @@ export function usePendienteBodeguero(bodegueroId) {
 
       const { data, error } = await supabase
         .from('paquetes')
-        .select('id, codigo, tracking_externo, fecha_recepcion, tamanio')
+        .select(`id, codigo, tracking_externo, fecha_recepcion, tamanio,
+                 cobro_destino, monto_cobro_destino, comprobante_cobro_url`)
         .eq('bodeguero_id', bodegueroId)
         .is('liquidacion_bodeguero_id', null)
         .order('fecha_recepcion', { ascending: false })
       if (error) throw error
 
       const paquetes = data ?? []
+      const comision = paquetes.length * tarifaPorPaquete
+      // Fletes de cobro a destino que el bodeguero pagó de su bolsillo
+      const reembolsos = paquetes.reduce(
+        (s, p) => s + (Number(p.monto_cobro_destino) || 0), 0)
+
       return {
         paquetes,
-        totalRecibidos: paquetes.length,
-        totalGanado:    paquetes.length * tarifaPorPaquete,   // COP
+        totalRecibidos:  paquetes.length,
+        comision,                          // COP por trabajo
+        reembolsos,                        // COP a devolver
+        totalGanado:     comision + reembolsos,
+        paquetesConCobro: paquetes.filter(p => p.cobro_destino).length,
         tarifaPorPaquete,
         desde: paquetes.length
           ? paquetes[paquetes.length - 1].fecha_recepcion

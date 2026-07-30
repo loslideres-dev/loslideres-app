@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import {
   Package, RefreshCw, Camera, Image as ImageIcon, Loader2, Check,
-  Trash2, Pencil, AlertTriangle, X,
+  Trash2, Pencil, AlertTriangle, X, Receipt, FileText,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import {
@@ -314,6 +314,35 @@ function DetalleRegistro({ paquete, onClose, onToast }) {
                 new Date(paquete.fecha_recepcion).toLocaleDateString('es-VE',
                   { day: 'numeric', month: 'short' })} />
             </div>
+
+            {paquete.cobro_destino && (
+              <div className="rounded-xl overflow-hidden"
+                style={{ border: '2px solid #FDE68A', background: '#FFFBEB' }}>
+                <div className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center
+                    flex-shrink-0" style={{ background: '#FEF3C7' }}>
+                    <Receipt size={17} style={{ color: '#B45309' }} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs" style={{ color: '#92400E' }}>
+                      Flete que pagaste
+                    </p>
+                    <p className="text-lg font-black" style={{ color: '#B45309' }}>
+                      ${Number(paquete.monto_cobro_destino ?? 0).toLocaleString('es-CO')}
+                      <span className="text-xs font-normal ml-1">COP</span>
+                    </p>
+                  </div>
+                </div>
+                {paquete.comprobante_cobro_url && (
+                  <button onClick={() => setVisorSrc(paquete.comprobante_cobro_url)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5
+                      text-xs font-semibold active:scale-95 transition"
+                    style={{ borderTop: '1px solid #FDE68A', color: '#92400E' }}>
+                    <FileText size={14} /> Ver la guía
+                  </button>
+                )}
+              </div>
+            )}
 
             {paquete.observaciones && (
               <Dato label="Observaciones" valor={paquete.observaciones} />

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
-import { ArrowLeft, Package, Calendar, User, CreditCard } from 'lucide-react'
+import { ArrowLeft, Package, Calendar, User, CreditCard, Receipt } from 'lucide-react'
 import EstadoBadge from '../../components/ui/EstadoBadge'
 import ClienteLayout from '../../components/layout/ClienteLayout'
 import ImageViewer from '../../components/ui/ImageViewer'
@@ -50,7 +50,7 @@ export default function DetallePaquete() {
     queryKey: ['paquete', id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('paquetes')
+        .from('paquetes_con_cliente')
         .select('*')
         .eq('id', id)
         .single()
@@ -91,6 +91,9 @@ export default function DetallePaquete() {
         <ImageViewer src={visorSrc} onClose={() => setVisorSrc(null)} />
       )}
 
+      {/* Área scrolleable — ocupa el espacio entre el tope y el navbar */}
+      <div className="flex-1 overflow-y-auto pb-6">
+
       {/* ── Header con foto ── */}
       <div className="relative" style={{ background: '#0D2B5E' }}>
         {/* Botón volver */}
@@ -98,7 +101,7 @@ export default function DetallePaquete() {
           onClick={() => navigate(-1)}
           className="absolute top-12 left-4 z-10 w-9 h-9 rounded-full
             flex items-center justify-center transition"
-          style={{ background: 'rgba(255,255,255,0.15)' }}>
+          style={{ background: 'rgba(0,0,0,0.45)' }}>
           <ArrowLeft size={18} className="text-white" />
         </button>
 
@@ -222,6 +225,31 @@ export default function DetallePaquete() {
         </div>
       </div>
 
+      {/* ── Cobro a destino ── */}
+      {paquete.cobro_destino && paquete.monto_cobro_destino && (
+        <div className="mx-5 mb-4 rounded-2xl overflow-hidden"
+          style={{ background: '#FFFBEB', border: '2px solid #FDE68A' }}>
+          <div className="px-5 py-4 flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center
+              flex-shrink-0" style={{ background: '#FEF3C7' }}>
+              <Receipt size={20} style={{ color: '#B45309' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold" style={{ color: '#92400E' }}>
+                Cargo de flete al llegar a Maicao
+              </p>
+              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: '#B45309' }}>
+                Este paquete llegó con cobro a destino. El bodeguero pagó{' '}
+                <span className="font-bold">
+                  ${Number(paquete.monto_cobro_destino).toLocaleString('es-CO')} COP
+                </span>{' '}
+                de flete al recibirlo. Ese costo se refleja en el precio de tu envío.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Detalles ── */}
       <div className="mx-5 mb-4 bg-white rounded-2xl shadow-sm p-5">
         <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
@@ -309,6 +337,8 @@ export default function DetallePaquete() {
           )}
         </div>
       )}
+
+      </div>{/* fin área scrolleable */}
 
     </ClienteLayout>
   )

@@ -52,7 +52,9 @@ export function usePaquetesDeLiquidacion(liquidacionId, tipo) {
 
       const { data, error } = await supabase
         .from('paquetes')
-        .select('id, codigo, tracking_externo, tamanio, monto_traslado, fecha_entrega, fecha_recepcion')
+        .select(`id, codigo, tracking_externo, tamanio, monto_traslado,
+                 fecha_entrega, fecha_recepcion,
+                 cobro_destino, monto_cobro_destino, comprobante_cobro_url`)
         .eq(campo, liquidacionId)
         .order(tipo === 'conductor' ? 'fecha_entrega' : 'fecha_recepcion',
                { ascending: false })
@@ -71,7 +73,9 @@ export function usePaquetesPendientes(usuarioId, tipo) {
     queryFn: async () => {
       let q = supabase
         .from('paquetes')
-        .select('id, codigo, tracking_externo, tamanio, monto_traslado, fecha_entrega, fecha_recepcion')
+        .select(`id, codigo, tracking_externo, tamanio, monto_traslado,
+                 fecha_entrega, fecha_recepcion,
+                 cobro_destino, monto_cobro_destino, comprobante_cobro_url`)
 
       if (tipo === 'conductor') {
         q = q.eq('conductor_id', usuarioId)

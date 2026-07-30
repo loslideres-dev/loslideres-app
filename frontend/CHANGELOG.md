@@ -1,80 +1,83 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [0.6.0] — 2026-07-29
+
+### ✨ Módulo de Gerencia (consola desktop)
+
+* **Panel ejecutivo** — corredor Maicao → Maracaibo como línea de estaciones, cifras del mes, detección de atascos y deuda viva pendiente de liquidar.
+* **Paquetes** — tabla completa con filtros por etapa, tiempo en etapa con semáforo de colores, buscador y exportación a CSV.
+* **SLA y atascos** — cumplimiento por etapa con barras, ciclo completo promedio y tabla de paquetes detenidos ordenada por exceso.
+* **Resultados** — estado de resultados mensual, cierre que congela cifras, fondo de reserva configurable y navegación mes a mes.
+* **Gastos** — registro de egresos con categoría, monto, moneda, foto del comprobante y marca de gasto informativo (no afecta el reparto).
+* **Cierres** — liquidaciones a bodegueros y conductores en formato desktop con desglose comisión vs devolución de fletes.
+* **Reparto** — participación de socios con histórico de vigencia, distribuciones por cierre y registro de retiros.
+* **Usuarios** — gestión completa con rol Gerente disponible en el selector, sin tocar SQL.
+* **Ajustes** — tarifas, pago al bodeguero, fondo de reserva, monedas, tasas de cambio, métodos de pago y categorías de gasto en una sola pantalla.
+* **Auditoría** — trazabilidad con ícono por tipo de evento, filtro de solo-dinero y modal con antes/después en JSON.
+* **Rol `gerente`** — nuevo rol con acceso exclusivo al módulo. Un admin no puede ver la contabilidad ni el reparto entre socios.
+
+### ✨ Cobro a destino
+
+* El bodeguero puede marcar un paquete como "cobro a destino" al registrarlo, indicando el monto del flete y adjuntando foto de la guía.
+* El monto se suma automáticamente a su liquidación como devolución, separado de la comisión.
+* El admin ve el aviso y la guía al tarifar, con recordatorio para ajustar el precio.
+* El cliente ve una tarjeta ámbar en el detalle de su paquete explicando el cargo.
+* El bodeguero ve el desglose en su reporte: comisión de trabajo vs fletes devueltos.
+
+### 🔧 Correcciones
+
+* `DetallePaquete` del cliente ahora scrollea correctamente — el contenido ya no queda cortado por el navbar.
+* Botón de volver en `DetallePaquete` con fondo más oscuro, visible sobre cualquier foto.
+* Query de `DetallePaquete` cambiada a `paquetes_con_cliente` para exponer los campos de cobro a destino y foto de entrega.
+
+### 🗄️ Base de datos (SQL ejecutados)
+
+* `09_rol_gerente.sql` — funciones `es_admin_o_gerente()` y `es_gerente()`, políticas RLS ampliadas.
+* `10_contabilidad.sql` — tablas `categorias_gasto`, `gastos`, `cierres_mensuales`, `socios`, `distribuciones`; funciones `calcular_resultado_mes()` y `cerrar_mes()`; parámetro `fondo_reserva_pct`.
+* `11_cobro_destino.sql` — columnas `cobro_destino`, `monto_cobro_destino`, `comprobante_cobro_url` en `paquetes`; desglose en `liquidaciones`; vista y funciones actualizadas.
+
+
 ## [0.5.1] — 2026-07-29
 
 ### ✨ Nuevas funcionalidades
 
-* **Foto de entrega** — el conductor puede tomar o subir una foto al marcar un paquete como entregado. Queda como comprobante visible para el cliente en el detalle del paquete y para el admin en el modal. La foto es opcional: si la subida falla por mala señal, la entrega se registra igual.
+* Foto de entrega como comprobante (conductor).
+* Infraestructura multi-moneda: monedas, tasas históricas y métodos de pago configurables desde la UI.
+* Dirección de entrega congelada al tarifar.
 
-* **Infraestructura multi-moneda** — el sistema queda preparado para cobrar en COP y VES sin redeplegar. Desde ⚙️ Tarifas el admin puede habilitar monedas, registrar tasas de cambio y crear métodos de pago atados a cada moneda. Hoy solo USD está activo; las demás monedas se activan cuando se necesiten.
+### 🔧 Correcciones
 
-* **Métodos de pago configurables desde la BD** — los cuatro métodos anteriores (Efectivo, Zelle, Transferencia, Pago móvil) migran a la tabla `metodos_pago`. Crear, renombrar o deshabilitar un método ya no requiere código ni redespliegue.
+* Header de Entregas unificado para admin.
+* Nombre del cliente en el header del Casillero.
+* Navbar fijo en la pantalla de Perfil del cliente.
+* Bug #48: modal de PaquetesAdmin ya no reabre al cambiar filtro con `?tarificar=`.
 
-* **Tasas de cambio históricas** — cada tasa queda registrada con fecha. Al cobrar en otra moneda la tasa se congela en el paquete (`tasa_aplicada`, `monto_cobrado_usd`), así los reportes históricos no cambian si la tasa cambia después.
+### 🗄️ Base de datos
 
-* **Reporte financiero con multi-moneda** — el desglose de métodos de pago ahora muestra el monto cobrado en cada moneda y su equivalente en USD, con total consolidado. Nuevo hook `usePagos.js` con helpers de conversión.
-
-### 🔧 Mejoras
-
-* **Dirección congelada al tarifar** — la dirección de entrega se copia al paquete cuando el admin tarifa. Si el cliente cambia su dirección después, el conductor no ve la dirección nueva a mitad de camino. Los paquetes existentes se migraron con la dirección actual de cada cliente.
-
-* **Header de Entregas unificado para admin** — cuando el admin entra a la pantalla de Entregas, el header ahora es idéntico al del resto de pantallas de administración: "ADMINISTRACIÓN", título, engranaje de tarifas, campanita y avatar.
-
-* **Nombre del cliente en header del Casillero** — el título "Mi casillero" reemplazado por el nombre real del cliente.
-
-* **Navbar fijo en la pantalla de Perfil del cliente** — el área del formulario ahora scrollea independientemente, el navbar queda anclado abajo.
-
-* **Bug #48 corregido** — el modal de PaquetesAdmin ya no se vuelve a abrir solo al cambiar de filtro cuando hay `?tarificar=` en la URL. Se aplica la bandera `modalAbiertoAuto` propuesta en el backlog.
-
-### 🗄️ Base de datos (SQL ejecutados)
-
-* `07_foto_entrega_y_direccion.sql` — columnas `foto_entrega_url` y `direccion_entrega` en `paquetes`; backfill de dirección para paquetes existentes; vista `paquetes_con_cliente` recreada.
-* `08_multimoneda.sql` — tablas `monedas`, `tasas_cambio`, `metodos_pago`; columnas `metodo_pago_id`, `moneda_cobro`, `tasa_aplicada`, `monto_cobrado_usd` en `paquetes`; función `tasa_vigente()`; migración de datos históricos a USD; vista recreada con joins a las tablas nuevas.
+* `07_foto_entrega_y_direccion.sql`, `08_multimoneda.sql`
 
 
 ## [0.5.0] — 2026-07-28
 
-### ✨ Nuevas funcionalidades
+### ✨ Sistema de liquidaciones
 
-* **Sistema de liquidaciones (cierres de pago)** — módulo completo para pagar a conductores y bodegueros. Pantalla "Cierres" en el navbar. Tabs Bodegueros / Conductores con total pendiente, lista de personas con saldo, buscador e historial. Modal de liquidación con monto, periodo, notas, paquetes incluidos (plegable) y confirmación en dos pasos. El contador vuelve a cero tras cada cierre; el historial se conserva. Los admins se excluyen de conductores a pagar. Toda la lógica corre en Supabase via funciones `SECURITY DEFINER`.
-* **ReporteBodeguero rediseñado** — periodo actual pendiente + historial de liquidaciones con detalle desplegable.
-* **ReporteConductor rediseñado** — mismo patrón.
-* **ReporteAdmin — Estado de cuenta** — ingresos vs egresos, utilidad y margen, comisiones COP separadas, deuda viva y lo ya pagado.
-* **ReporteAdmin — Por persona** — entregas e ingresos por conductor; recepciones y comisión por bodeguero.
-* **ReporteAdmin — Tabs Operativo / Financiero** — selector de periodo compartido.
-* **Dashboard — sección Gestión** — accesos rápidos a Usuarios y Tarifas.
+* Cierres de pago a conductores (USD) y bodegueros (COP).
+* Historial por persona con detalle de paquetes plegable.
+* Paquetes marcados atómicamente en Postgres — sin ambigüedad de fechas.
+* Reportes de bodeguero y conductor rediseñados: periodo pendiente + historial.
+* Reportes del admin en tabs Operativo / Financiero con estado de cuenta.
 
-### 🗄️ Base de datos (SQL ejecutados)
+### 🗄️ Base de datos
 
-* `06_liquidaciones.sql` — tabla `liquidaciones`, marcas en `paquetes`, índices parciales, RLS, funciones `liquidar_conductor` y `liquidar_bodeguero`, vista `pendientes_liquidacion`.
+* `06_liquidaciones.sql`
 
 
 ## [0.4.2] — 2026-07-28
 
-### ✨ Nuevas funcionalidades
-
-* **Visor de imagen a pantalla completa** — componente reutilizable `ImageViewer.jsx`.
-* **Botón WhatsApp en Casillero** — contacto directo con mensaje pre-armado.
-
-### 🔧 Mejoras
-
-* Correo y dirección (→ Google Maps) visibles en el detalle de usuario del admin.
-* Registro simplificado: solo nombre, correo y contraseña. Teléfono y dirección van al onboarding.
+* Visor de imagen a pantalla completa, botón WhatsApp en Casillero, registro simplificado.
 
 
 ## [0.4.0] — 2026-07-27
 
-### ✨ Nuevas funcionalidades
-
-* Tracking del courier en toda la app + búsqueda por ENC o tracking.
-* Flujo de estados rediseñado: EN_TRANSITO lo pone el conductor.
-* Método de pago y monto de traslado al tarifar.
-* Mapa visible desde la asignación (estado TARIFADO).
-* Reporte del negocio con gráficos (Recharts).
-* Función RPC de rastreo público para la landing.
-* Editar/eliminar registros del bodeguero en estado RECIBIDO.
-
-### 🗄️ Base de datos (SQL ejecutados)
-
-* `05_tracking_externo.sql`, `rastrear_paquete()`, `02_fix_trigger_roles.sql`, `03_rls_bodeguero_editar.sql`.
+* Tracking del courier, flujo de estados por conductor, reporte del negocio con gráficos, editar/eliminar registros del bodeguero.
