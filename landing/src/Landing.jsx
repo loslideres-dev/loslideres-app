@@ -115,7 +115,7 @@ export default function Landing() {
       <header className="ll-header">
         <div className="ll-wrap ll-header__inner">
           <a className="ll-brand" href="#inicio" aria-label="Los Líderes Encomiendas — inicio">
-            <img className="ll-brand__mark" src="/logo-full.png" alt="" />
+            <img className="ll-brand__mark" src="/logo-full.png" alt="Los Líderes Encomiendas" />
             <span className="ll-brand__text">
               <span className="ll-brand__name">Los Líderes</span>
               <span className="ll-brand__slogan">De Colombia a tu puerta</span>

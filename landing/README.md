@@ -25,26 +25,50 @@ Build verificado con Vite ✅ · Sirve con `serve -s dist` ✅ · Responsive des
 ```
 landing/
 ├── public/
-│   ├── hero.jpg           hero desktop (1600px, ~145KB)
-│   ├── hero-mob.jpg       hero móvil (900px, ~89KB)
-│   ├── logo-full.png      logo completo limpio (sin barra de paleta)
-│   ├── iconos-mini.png    favicon
-│   ├── AMAZON.png         logo Amazon (barra de tiendas)
-│   ├── SHEIN.png          logo Shein (barra de tiendas)
-│   ├── TEMU.png           logo Temu (barra de tiendas)
-│   └── MERCADOLIBRE.png   logo MercadoLibre (barra de tiendas)
+│   ├── hero.jpg              hero desktop (1600px, ~145KB)
+│   ├── hero-mob.jpg          hero móvil (900px, ~89KB)
+│   ├── og-image.jpg          imagen Open Graph 1200×630 px (WhatsApp/Facebook)
+│   ├── logo-full.png         logo completo limpio (sin barra de paleta)
+│   ├── iconos-mini.png       favicon
+│   ├── AMAZON.png
+│   ├── SHEIN.png
+│   ├── TEMU.png
+│   └── MERCADOLIBRE.png
 ├── src/
-│   ├── Landing.jsx        componente principal
-│   ├── landing.css        estilos (paleta + tipografías de marca)
-│   └── main.jsx           entry point
-├── index.html             fuentes, favicon, meta SEO/OpenGraph
+│   ├── Landing.jsx           componente principal
+│   ├── landing.css           estilos (paleta + tipografías de marca)
+│   └── main.jsx              entry point
+├── index.html                meta SEO, Open Graph, Twitter Card, Schema.org
 ├── vite.config.js
-├── package.json           serve está en dependencies (lo necesita Railway)
-├── nixpacks.toml          Node 20 + npm ci + npm run build
-├── railway.json           startCommand: serve -s dist -l $PORT
+├── package.json              serve está en dependencies (lo necesita Railway)
+├── nixpacks.toml             Node 20 + npm ci + npm run build
+├── railway.json              startCommand: serve -s dist -l $PORT
 ├── .env.example
 └── .gitignore
 ```
+
+---
+
+## SEO
+
+El `index.html` incluye:
+
+- **Title**: `Los Líderes Encomiendas · Envíos de Colombia a Maracaibo, Venezuela`
+- **Meta description**: menciona Amazon, Shein, Temu, MercadoLibre y casillero gratis.
+- **`canonical`**: `https://www.loslideresencomiendas.com/`
+- **Open Graph completo**: título, descripción, imagen absoluta, locale `es_VE`.
+- **Twitter Card**: `summary_large_image`.
+- **Schema.org `LocalBusiness`**: dirección Maicao, área de servicio Maracaibo, tarifas S/M/L/XL.
+
+### og-image
+La imagen `public/og-image.jpg` (1200×630 px) es lo que aparece al compartir el link en WhatsApp. Generarla desde el hero:
+```bash
+magick public/hero.jpg -resize 1200x630^ -gravity center -extent 1200x630 public/og-image.jpg
+```
+
+### Verificación post-deploy
+- Schema.org: https://search.google.com/test/rich-results
+- Open Graph: https://developers.facebook.com/tools/debug/
 
 ---
 
@@ -53,27 +77,19 @@ landing/
 ```bash
 cd landing
 npm install
-cp .env.example .env      # ajusta si quieres
+cp .env.example .env
 npm run dev               # http://localhost:5173
-```
-
-Para probar el build de producción localmente:
-
-```bash
-npm run build && npm run preview
 ```
 
 ---
 
 ## Variables de entorno
 
-Configuradas en Railway → servicio `loslideres-landing` → Variables. Las `VITE_*` se compilan en el build — si las cambias, hay que redesplegar.
-
-| Variable | Valor actual |
-|----------|-------------|
+| Variable | Valor |
+|----------|-------|
 | `VITE_APP_URL` | `https://app.loslideresencomiendas.com` |
-| `VITE_WHATSAPP` | `584246282123` (código país + número, sin `+`) |
-| `VITE_EMAIL` | `soporte@loslideresencomiendas.com` |
+| `VITE_WHATSAPP` | `584246282123` |
+| `VITE_EMAIL` | `info@loslideresencomiendas.com` |
 | `VITE_SUPABASE_URL` | `https://kcmasyggaaclpkojohky.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | `<anon key>` |
 
@@ -81,7 +97,7 @@ Configuradas en Railway → servicio `loslideres-landing` → Variables. Las `VI
 
 ## Dominio — loslideresencomiendas.com
 
-Dominio registrado en **GoDaddy**. También se posee `loslideresencomienda.com` (sin s) que redirige al principal.
+Registrado en **GoDaddy**. `loslideresencomienda.com` (sin s) redirige al principal.
 
 ### Registros DNS en GoDaddy
 
@@ -95,44 +111,30 @@ Dominio registrado en **GoDaddy**. También se posee `loslideresencomienda.com` 
 | MX | `@` | `mx2.improvmx.com` (prioridad 20) | 1 hora |
 | TXT | `@` | `v=spf1 include:spf.improvmx.com ~all` | 1 hora |
 
-> ⚠️ Los valores CNAME de Railway pueden cambiar si se elimina y re-agrega el dominio en Railway. Si hay que reconfigurar, verificar los valores actuales en Railway → Settings → Networking → Custom Domain → DNS records.
+Reenvíos activos en GoDaddy:
+- `loslideresencomiendas.com` → `https://www.loslideresencomiendas.com` (301)
+- `loslideresencomienda.com` → `https://www.loslideresencomiendas.com` (301)
 
-### Reenvío del raíz
-
-En GoDaddy → DNS → Reenvío → Dominio:
-- `loslideresencomiendas.com` → `https://www.loslideresencomiendas.com` (301 Permanente)
-
-### Dominio sin s (`loslideresencomienda.com`)
-
-Solo tiene reenvío configurado:
-- `loslideresencomienda.com` → `https://www.loslideresencomiendas.com` (301 Permanente)
-- No tiene registros de Railway propios.
+> ⚠️ Los valores CNAME pueden cambiar si se elimina y re-agrega el dominio en Railway. Verificar en Railway → Settings → Networking antes de editar en GoDaddy.
 
 ---
 
 ## Correo — ImprovMX
 
-Correo `info@loslideresencomiendas.com` configurado con **ImprovMX** (plan gratuito). Reenvía a `loslideresencomiendas@gmail.com`.
-
-- Panel: https://improvmx.com
-- Los registros MX y SPF ya están en GoDaddy (ver tabla arriba).
-- Para agregar más alias: ImprovMX → Aliases → Add alias.
+`info@loslideresencomiendas.com` reenvía a `loslideresencomiendas@gmail.com`.
+Panel: https://improvmx.com · Los registros MX y SPF ya están en GoDaddy.
 
 ---
 
 ## Deploy en Railway
 
-La landing corre como servicio `loslideres-landing` en el mismo proyecto Railway que la app.
-
-- **Plan:** Hobby ($5 USD/mes) — necesario para custom domains sin límite.
 - **Root Directory:** `landing`
 - **Build:** `nixpacks.toml` (Node 20 + `npm ci` + `npm run build`)
-- **Start:** `serve -s dist -l $PORT` (definido en `railway.json`)
-- **Deploy automático:** cada `git push origin main` dispara build y despliegue.
+- **Start:** `serve -s dist -l $PORT`
+- **Deploy automático:** cada `git push origin main`
 
 ### Supabase — URLs de callback
 
-En Supabase → Authentication → URL Configuration → Redirect URLs deben estar:
 ```
 https://app.loslideresencomiendas.com/auth/callback
 https://loslideres-app-production.up.railway.app/auth/callback
@@ -143,31 +145,28 @@ http://localhost:5173/auth/callback
 
 ## Si el dominio necesita reconfigurarse
 
-Si por alguna razón hay que volver a configurar el dominio en Railway desde cero:
-
 1. Railway → servicio → Settings → Networking → elimina el custom domain.
-2. Agrega de nuevo con **+ Custom Domain** → escribe `www.loslideresencomiendas.com`.
-3. Railway mostrará nuevos valores CNAME y TXT.
-4. Actualiza **solo los registros que cambiaron** en GoDaddy (normalmente solo el CNAME `www`).
-5. El TXT `_railway-verify.www` generalmente no cambia — verificar antes de editar.
-6. Esperar propagación (5–30 min). Verificar en https://dnschecker.org.
-
-> No borrar y re-agregar el dominio innecesariamente — cada vez Railway puede generar un nuevo CNAME.
+2. Agrega de nuevo `www.loslideresencomiendas.com`.
+3. Railway muestra nuevos CNAME y TXT → actualiza solo los que cambiaron en GoDaddy.
+4. Esperar propagación (5–30 min) → verificar en https://dnschecker.org.
 
 ---
 
 ## Notas de marca
 
-- La landing usa **CSS plano, sin Tailwind** — más liviana y no depende de la config de Tailwind 4 del frontend.
-- Paleta: navy `#0D2B5E` · azul `#1565C0` · cielo `#4FC3F7` · blanco · verde entregado `#1B7A3E`.
-- Tipografías: Archivo (títulos), IBM Plex Sans (texto), IBM Plex Mono (datos/códigos).
-- Los logos de tiendas (`AMAZON.png`, `SHEIN.png`, `TEMU.png`, `MERCADOLIBRE.png`) van en `public/` — nombres en mayúsculas, Linux distingue mayúsculas/minúsculas en producción.
+- CSS plano, sin Tailwind. Prefijo `.ll-*`.
+- Paleta: navy `#0D2B5E` · azul `#1565C0` · cielo `#4FC3F7` · blanco · verde `#1B7A3E`.
+- Tipografías: Archivo (títulos), IBM Plex Sans (texto), IBM Plex Mono (datos).
+- Logos de tiendas en `public/` con nombres en **MAYÚSCULAS** (Linux distingue).
 
 ---
 
 ## Pendientes
 
+- [ ] Generar `public/og-image.jpg` (1200×630 px) a partir de `hero.jpg`.
+- [ ] Actualizar URLs de redes sociales en el `sameAs` del Schema.org.
+- [ ] Crear perfil en **Google Business Profile** con ubicación de la bodega en Maicao.
 - [ ] Reemplazar testimonios de ejemplo por reseñas reales.
-- [ ] (Opcional) Mostrar precios reales en Tarifas desde `config_negocio` via RPC.
-- [ ] PWA instalable (resuelve dark mode Samsung + habilita push real).
-- [ ] Dominio propio con SSL en el raíz sin GoDaddy forwarding (requiere mover DNS a Cloudflare).
+- [ ] (Opcional) Precios en vivo desde `config_negocio` via RPC.
+- [ ] PWA instalable.
+- [ ] Mover DNS a Cloudflare para resolver el reenvío del raíz sin GoDaddy forwarding.

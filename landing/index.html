@@ -2,18 +2,165 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo-mini.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="only light" />
-    <title>Los Líderes Encomiendas — Envíos de Colombia a Venezuela</title>
-    <meta name="description" content="Envíos de encomiendas de Maicao (Colombia) a Maracaibo (Venezuela) con seguimiento en tiempo real, foto de entrega y hora exacta. Cotiza tu envío hoy." />
-    <meta property="og:title" content="Los Líderes Encomiendas" />
-    <meta property="og:description" content="Tu encomienda de Colombia a Venezuela, segura y rastreada de principio a fin." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/hero.jpg" />
+
+    <!-- ═══════════════════════════════════════════════════
+         FAVICON
+    ════════════════════════════════════════════════════ -->
+    <link rel="icon"             type="image/png" sizes="32x32" href="/logo-mini.png" />
+    <link rel="apple-touch-icon"                               href="/logo-mini.png" />
+
+    <!-- ═══════════════════════════════════════════════════
+         SEO PRIMARIO
+         · El title incluye la ruta (Colombia → Venezuela) y
+           la ciudad destino (Maracaibo): son las búsquedas
+           exactas de tu cliente.
+         · La description menciona Amazon, Shein, Temu porque
+           son búsquedas concretas con mucho volumen.
+         · canonical evita contenido duplicado si la web se
+           accede con y sin www.
+    ════════════════════════════════════════════════════ -->
+    <title>Los Líderes Encomiendas · Envíos de Colombia a Maracaibo, Venezuela</title>
+
+    <meta name="description"
+          content="Recibe en Maracaibo tus compras de Amazon, Shein, Temu y MercadoLibre Colombia. Casillero gratis en Maicao, entrega a domicilio en Venezuela con seguimiento en tiempo real." />
+
+    <meta name="keywords"
+          content="encomiendas Colombia Venezuela, envíos Maracaibo, casillero Maicao, Amazon Venezuela, Shein Venezuela, Temu Venezuela, MercadoLibre Venezuela, courier Maracaibo, paquetes Colombia Venezuela" />
+
+    <meta name="robots" content="index, follow" />
+
+    <link rel="canonical" href="https://www.loslideresencomiendas.com/" />
+
+    <!-- ═══════════════════════════════════════════════════
+         OPEN GRAPH
+         Controla cómo se ve el link cuando lo compartes en
+         WhatsApp, Instagram, Facebook y LinkedIn.
+         · og:url debe ser la URL canónica con https y www.
+         · og:image necesita URL absoluta (no /hero.jpg).
+           Tamaño ideal: 1200 × 630 px. Usa la foto de la
+           camioneta en carretera — comunica el negocio de
+           un vistazo.
+         · og:locale es_VE dice a Facebook que el público
+           es venezolano.
+    ════════════════════════════════════════════════════ -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://www.loslideresencomiendas.com/" />
+    <meta property="og:site_name"   content="Los Líderes Encomiendas" />
+    <meta property="og:locale"      content="es_VE" />
+    <meta property="og:title"
+          content="Los Líderes Encomiendas · Envíos de Colombia a Maracaibo" />
+    <meta property="og:description"
+          content="Recibe en Maracaibo tus compras de Amazon, Shein y Temu. Casillero gratis en Maicao, entrega a domicilio con foto y seguimiento." />
+    <meta property="og:image"
+          content="https://www.loslideresencomiendas.com/og-image.jpg" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt"
+          content="Camioneta de Los Líderes Encomiendas en ruta Colombia–Venezuela" />
+
+    <!-- ═══════════════════════════════════════════════════
+         TWITTER / X
+         Aunque no tengas cuenta activa, este bloque controla
+         cómo se ve el link si alguien lo comparte en X.
+    ════════════════════════════════════════════════════ -->
+    <meta name="twitter:card"
+          content="summary_large_image" />
+    <meta name="twitter:title"
+          content="Los Líderes Encomiendas · Envíos de Colombia a Maracaibo" />
+    <meta name="twitter:description"
+          content="Recibe tus compras de Amazon, Shein y Temu en Maracaibo. Casillero gratis en Maicao." />
+    <meta name="twitter:image"
+          content="https://www.loslideresencomiendas.com/og-image.jpg" />
+
+    <!-- ═══════════════════════════════════════════════════
+         SCHEMA.ORG — DATOS ESTRUCTURADOS
+         Le dice a Google exactamente qué tipo de negocio es
+         este, dónde opera y qué servicios ofrece. Esto puede
+         activar el panel de Knowledge Graph en la búsqueda
+         ("el cuadro de información a la derecha en Google").
+         · LocalBusiness + Service cubre tanto la empresa
+           como el servicio de courier.
+         · areaServed lista las ciudades que le interesan a
+           tu cliente cuando busca.
+         · sameAs conecta la web con tus redes sociales.
+           Actualiza las URLs cuando las tengas verificadas.
+    ════════════════════════════════════════════════════ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Los Líderes Encomiendas",
+      "description": "Servicio de encomiendas puerta a puerta de Colombia a Venezuela. Bodega en Maicao, entrega a domicilio en Maracaibo. Paquetes de Amazon, Shein, Temu y MercadoLibre.",
+      "url": "https://www.loslideresencomiendas.com",
+      "logo": "https://www.loslideresencomiendas.com/logo-full.png",
+      "image": "https://www.loslideresencomiendas.com/og-image.jpg",
+      "email": "info@loslideresencomiendas.com",
+      "telephone": "+58-424-628-2123",
+      "priceRange": "$20–$60 USD",
+      "currenciesAccepted": "USD, COP, VES",
+      "paymentAccepted": "Cash, Zelle, Transferencia bancaria, Pago móvil",
+      "openingHours": "Mo-Sa 08:00-18:00",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Bodega en Maicao",
+        "addressLocality": "Maicao",
+        "addressRegion": "La Guajira",
+        "addressCountry": "CO"
+      },
+      "areaServed": [
+        { "@type": "City", "name": "Maracaibo", "sameAs": "https://www.wikidata.org/wiki/Q82010" },
+        { "@type": "City", "name": "Maicao",    "sameAs": "https://www.wikidata.org/wiki/Q1427551" }
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Tarifas de encomiendas",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "name": "Paquete pequeño (S)",
+            "description": "Sobres, celulares y cajas pequeñas hasta 30 cm",
+            "price": "20",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "name": "Paquete mediano (M)",
+            "description": "Cajas de hasta 50 cm por lado",
+            "price": "30",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "name": "Paquete grande (L)",
+            "description": "Cajas grandes de hasta 80 cm por lado",
+            "price": "45",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "name": "Paquete extra grande (XL)",
+            "description": "Electrodomésticos y bultos grandes de más de 80 cm",
+            "price": "60",
+            "priceCurrency": "USD"
+          }
+        ]
+      },
+      "sameAs": [
+        "https://www.instagram.com/loslideresencomiendas",
+        "https://www.facebook.com/loslideresencomiendas"
+      ]
+    }
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════
+         FUENTES
+    ════════════════════════════════════════════════════ -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+          rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>

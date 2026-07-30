@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://www.loslideresencomiendas.com/sitemap.xml
