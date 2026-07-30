@@ -1,0 +1,29 @@
+{
+  "name": "landing",
+  "private": true,
+  "version": "1.1.0",
+  "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vite build --ssr && node prerender.mjs",
+    "preview": "vite preview",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.8",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "serve": "^14.2.6"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^10.6.0",
+    "globals": "^17.7.0",
+    "vite": "^8.1.1"
+  }
+}

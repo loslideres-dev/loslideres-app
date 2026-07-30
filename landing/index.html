@@ -6,21 +6,24 @@
     <meta name="color-scheme" content="only light" />
 
     <!-- ═══════════════════════════════════════════════════
-         FAVICON
+         GOOGLE ANALYTICS
+         Debe ir dentro de <head>, no antes de él.
+         El primer script carga la librería; el segundo
+         configura tu propiedad con el ID real.
     ════════════════════════════════════════════════════ -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TSXGZLW6J6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-TSXGZLW6J6');
+    </script>
+
+    <!-- FAVICON -->
     <link rel="icon"             type="image/png" sizes="32x32" href="/logo-mini.png" />
     <link rel="apple-touch-icon"                               href="/logo-mini.png" />
 
-    <!-- ═══════════════════════════════════════════════════
-         SEO PRIMARIO
-         · El title incluye la ruta (Colombia → Venezuela) y
-           la ciudad destino (Maracaibo): son las búsquedas
-           exactas de tu cliente.
-         · La description menciona Amazon, Shein, Temu porque
-           son búsquedas concretas con mucho volumen.
-         · canonical evita contenido duplicado si la web se
-           accede con y sin www.
-    ════════════════════════════════════════════════════ -->
+    <!-- SEO PRIMARIO -->
     <title>Los Líderes Encomiendas · Envíos de Colombia a Maracaibo, Venezuela</title>
 
     <meta name="description"
@@ -33,18 +36,7 @@
 
     <link rel="canonical" href="https://www.loslideresencomiendas.com/" />
 
-    <!-- ═══════════════════════════════════════════════════
-         OPEN GRAPH
-         Controla cómo se ve el link cuando lo compartes en
-         WhatsApp, Instagram, Facebook y LinkedIn.
-         · og:url debe ser la URL canónica con https y www.
-         · og:image necesita URL absoluta (no /hero.jpg).
-           Tamaño ideal: 1200 × 630 px. Usa la foto de la
-           camioneta en carretera — comunica el negocio de
-           un vistazo.
-         · og:locale es_VE dice a Facebook que el público
-           es venezolano.
-    ════════════════════════════════════════════════════ -->
+    <!-- OPEN GRAPH -->
     <meta property="og:type"        content="website" />
     <meta property="og:url"         content="https://www.loslideresencomiendas.com/" />
     <meta property="og:site_name"   content="Los Líderes Encomiendas" />
@@ -60,13 +52,8 @@
     <meta property="og:image:alt"
           content="Camioneta de Los Líderes Encomiendas en ruta Colombia–Venezuela" />
 
-    <!-- ═══════════════════════════════════════════════════
-         TWITTER / X
-         Aunque no tengas cuenta activa, este bloque controla
-         cómo se ve el link si alguien lo comparte en X.
-    ════════════════════════════════════════════════════ -->
-    <meta name="twitter:card"
-          content="summary_large_image" />
+    <!-- TWITTER / X -->
+    <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:title"
           content="Los Líderes Encomiendas · Envíos de Colombia a Maracaibo" />
     <meta name="twitter:description"
@@ -74,19 +61,7 @@
     <meta name="twitter:image"
           content="https://www.loslideresencomiendas.com/og-image.jpg" />
 
-    <!-- ═══════════════════════════════════════════════════
-         SCHEMA.ORG — DATOS ESTRUCTURADOS
-         Le dice a Google exactamente qué tipo de negocio es
-         este, dónde opera y qué servicios ofrece. Esto puede
-         activar el panel de Knowledge Graph en la búsqueda
-         ("el cuadro de información a la derecha en Google").
-         · LocalBusiness + Service cubre tanto la empresa
-           como el servicio de courier.
-         · areaServed lista las ciudades que le interesan a
-           tu cliente cuando busca.
-         · sameAs conecta la web con tus redes sociales.
-           Actualiza las URLs cuando las tengas verificadas.
-    ════════════════════════════════════════════════════ -->
+    <!-- SCHEMA.ORG -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -117,34 +92,10 @@
         "@type": "OfferCatalog",
         "name": "Tarifas de encomiendas",
         "itemListElement": [
-          {
-            "@type": "Offer",
-            "name": "Paquete pequeño (S)",
-            "description": "Sobres, celulares y cajas pequeñas hasta 30 cm",
-            "price": "20",
-            "priceCurrency": "USD"
-          },
-          {
-            "@type": "Offer",
-            "name": "Paquete mediano (M)",
-            "description": "Cajas de hasta 50 cm por lado",
-            "price": "30",
-            "priceCurrency": "USD"
-          },
-          {
-            "@type": "Offer",
-            "name": "Paquete grande (L)",
-            "description": "Cajas grandes de hasta 80 cm por lado",
-            "price": "45",
-            "priceCurrency": "USD"
-          },
-          {
-            "@type": "Offer",
-            "name": "Paquete extra grande (XL)",
-            "description": "Electrodomésticos y bultos grandes de más de 80 cm",
-            "price": "60",
-            "priceCurrency": "USD"
-          }
+          { "@type": "Offer", "name": "Paquete pequeño (S)",      "description": "Sobres, celulares y cajas pequeñas hasta 30 cm", "price": "20", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Paquete mediano (M)",      "description": "Cajas de hasta 50 cm por lado",                  "price": "30", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Paquete grande (L)",       "description": "Cajas grandes de hasta 80 cm por lado",          "price": "45", "priceCurrency": "USD" },
+          { "@type": "Offer", "name": "Paquete extra grande (XL)","description": "Electrodomésticos y bultos de más de 80 cm",     "price": "60", "priceCurrency": "USD" }
         ]
       },
       "sameAs": [
@@ -154,9 +105,7 @@
     }
     </script>
 
-    <!-- ═══════════════════════════════════════════════════
-         FUENTES
-    ════════════════════════════════════════════════════ -->
+    <!-- FUENTES -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
