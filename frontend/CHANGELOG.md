@@ -1,6 +1,23 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [0.7.0] — 2026-07-30
+
+### ✨ Calculadora de cotización
+
+* **Nueva pantalla `/admin/calculadora`** — herramienta de cotización para el admin. Agrega líneas con medidas (largo × ancho × alto) y peso; el sistema sugiere la talla y calcula el subtotal por línea y el total.
+* **Regla de talla por volumen y peso** — la talla definitiva es la mayor entre la que sale por el lado más largo y la que sale por el peso. Cortes: S ≤ 30 cm / 5 kg · M ≤ 50 cm / 15 kg · L ≤ 80 cm / 30 kg · XL en adelante. Calibrados contra pedidos reales.
+* **Descuento por volumen automático** — 10 % desde 10 cajas en un mismo envío. Se activa solo con un interruptor, y se puede desactivar manualmente si al cliente le corresponde otra condición. Las XL cuentan para llegar al mínimo pero no entran en la base del descuento (su precio es un piso, no un precio cerrado).
+* **Lista de precios estándar** — botón verde al inicio de la pantalla que manda la tabla completa S/M/L/XL a WhatsApp, para quien pregunta sin tener medidas todavía. Los precios y los rangos se leen de la tabla `tarifas` en vivo: si subes un precio en Ajustes, el mensaje cambia solo.
+* **Mensaje sin emojis fuera del BMP** — los emojis con codepoint > U+FFFF llegan como `\xFFFD` en WhatsApp Desktop (par subrogado roto). El mensaje usa solo caracteres del plano básico; los emojis que escriba el operador en el campo de nombre se limpian antes de enviar.
+* **`lib/tallas.js`** — fuente única de verdad para la lógica de tallas. Exporta `sugerirTalla()`, `tallaPorMedidas()`, `tallaPorPeso()` y las constantes de descuento. `Recepcion.jsx` puede importar de aquí en lugar de mantener su propia copia.
+* **Dashboard rediseñado** — los 4 contadores de estado pasaron de tarjetas apiladas a una grilla compacta de 4 columnas; libera espacio para los accesos de gestión. La calculadora aparece primero en la sección GESTIÓN.
+
+### 🔧 Sin SQL
+
+Esta versión no toca la base de datos.
+
+
 ## [0.6.0] — 2026-07-29
 
 ### ✨ Módulo de Gerencia (consola desktop)

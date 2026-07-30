@@ -1,26 +1,25 @@
 import { useNavigate } from 'react-router-dom'
 import {
   Package, Truck, CheckCircle, Clock, RefreshCw, ChevronRight,
-  Users, Settings, Building2,
+  Users, Settings, Building2, Calculator,
 } from 'lucide-react'
 import { useDashboardStats, usePaquetesAdmin } from '../../hooks/usePaquetes'
 import { useAuthStore } from '../../store/authStore'
 import AdminLayout from '../../components/layout/AdminLayout'
 
-function StatCard({ icon: Icon, label, value, color, onClick }) {
+/* Contador compacto. Cuatro en una fila: ocupa ~1/3 de lo que ocupaban
+   las tarjetas anchas y deja la pantalla para los accesos de gestión. */
+function StatTile({ icon: Icon, label, value, color, onClick }) {
   return (
     <button onClick={onClick}
-      className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm
-        active:scale-95 transition w-full text-left">
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+      className="bg-white rounded-2xl px-2 py-3 shadow-sm active:scale-95 transition
+        flex flex-col items-center justify-start gap-1.5 text-center">
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
         style={{ background: color + '20' }}>
-        <Icon size={22} style={{ color }} />
+        <Icon size={15} style={{ color }} />
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-2xl font-black text-slate-800">{value}</p>
-        <p className="text-xs text-slate-500">{label}</p>
-      </div>
-      <ChevronRight size={16} className="text-slate-300" />
+      <p className="text-xl font-bold font-mono leading-none text-slate-800">{value}</p>
+      <p className="text-[10px] leading-tight text-slate-500">{label}</p>
     </button>
   )
 }
@@ -54,8 +53,8 @@ export default function Dashboard() {
     <AdminLayout title="Dashboard">
       <div className="px-5 py-4">
 
-        {/* Stats */}
-        <div className="flex items-center justify-between mb-3">
+        {/* Resumen */}
+        <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-slate-400 tracking-wider">RESUMEN</p>
           <button onClick={() => refetch()} className="text-slate-400 hover:text-slate-600">
             <RefreshCw size={16} />
@@ -63,17 +62,17 @@ export default function Dashboard() {
         </div>
 
         {loadStats
-          ? <div className="flex justify-center py-8">
+          ? <div className="flex justify-center py-6 mb-5">
               <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
-          : <div className="space-y-2 mb-5">
-              <StatCard icon={Clock}        label="Pendientes de precio"  value={stats.pendientes_precio ?? 0} color="#0EA5E9"
+          : <div className="grid grid-cols-4 gap-2 mb-5">
+              <StatTile icon={Clock}       label="Por tarifar"    value={stats.pendientes_precio ?? 0} color="#0EA5E9"
                 onClick={() => navigate('/admin/paquetes?estado=RECIBIDO')} />
-              <StatCard icon={Truck}        label="En tránsito"           value={stats.en_transito ?? 0}      color="#F59E0B"
+              <StatTile icon={Truck}       label="En tránsito"    value={stats.en_transito ?? 0}       color="#F59E0B"
                 onClick={() => navigate('/admin/paquetes?estado=EN_TRANSITO')} />
-              <StatCard icon={Package}      label="En reparto"            value={stats.en_reparto ?? 0}       color="#8B5CF6"
+              <StatTile icon={Package}     label="En reparto"     value={stats.en_reparto ?? 0}        color="#8B5CF6"
                 onClick={() => navigate('/admin/paquetes?estado=EN_REPARTO')} />
-              <StatCard icon={CheckCircle}  label="Entregados hoy"        value={stats.entregados_hoy ?? 0}   color="#10B981"
+              <StatTile icon={CheckCircle} label="Entregados hoy" value={stats.entregados_hoy ?? 0}    color="#10B981"
                 onClick={() => navigate('/admin/paquetes?estado=ENTREGADO')} />
             </div>
         }
@@ -83,6 +82,10 @@ export default function Dashboard() {
           GESTIÓN
         </p>
         <div className="space-y-2 mb-5">
+          <AccesoCard icon={Calculator} label="Calculadora"
+            desc="Cotiza varios paquetes y arma el mensaje de WhatsApp"
+            color="#1B7A3E"
+            onClick={() => navigate('/admin/calculadora')} />
           {esGerente && (
             <AccesoCard icon={Building2} label="Gerencia"
               desc="Consola de escritorio: contabilidad, socios y análisis"

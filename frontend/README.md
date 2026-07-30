@@ -2,7 +2,7 @@
 > App multi-rol para gestión de encomiendas puerta a puerta, de Maicao (Colombia) a Maracaibo (Venezuela)
 
 ![Status](https://img.shields.io/badge/status-producción-green)
-![Version](https://img.shields.io/badge/version-v0.6.0-blue)
+![Version](https://img.shields.io/badge/version-v0.7.0-blue)
 ![Stack](https://img.shields.io/badge/stack-React%20%7C%20Supabase%20%7C%20Railway-orange)
 
 ## URLs en producción
@@ -147,6 +147,9 @@ Bodegueros cobran: comisión (tarifa × paquetes) + reembolso de fletes de cobro
 | Multi-moneda configurable desde la UI | v0.5.1 |
 | Módulo de Gerencia desktop (G1–G5) | v0.6.0 |
 | Cobro a destino | v0.6.0 |
+| Calculadora de cotización con WhatsApp | v0.7.0 |
+| Lista de precios estándar por WhatsApp | v0.7.0 |
+| Dashboard con stats compactos en grilla | v0.7.0 |
 
 ## Setup local
 
@@ -163,7 +166,7 @@ npm run dev
 ```env
 VITE_SUPABASE_URL=https://kcmasyggaaclpkojohky.supabase.co
 VITE_SUPABASE_ANON_KEY=tu_anon_key
-VITE_APP_VERSION=0.6.0
+VITE_APP_VERSION=0.7.0
 VITE_APP_NAME=Los Líderes Encomiendas
 ```
 
@@ -200,6 +203,21 @@ Railway despliega automáticamente. El build number se genera con `gen-version.j
 - **PWA**: app instalable, dark mode Samsung, push reales.
 - **Gerencia G2+**: tasa de cambio automática, exportaciones PDF.
 - **Módulo de taller**: vehículos, mantenimiento, combustible (cuando aplique).
+
+## Lógica de tallas (`lib/tallas.js`)
+
+Fuente única de verdad para la clasificación de paquetes. La talla definitiva es la mayor entre la que sale por el lado más largo y la que sale por el peso (regla de peso facturable):
+
+| Talla | Lado más largo | Peso |
+|---|---|---|
+| S | ≤ 30 cm | ≤ 5 kg |
+| M | ≤ 50 cm | ≤ 15 kg |
+| L | ≤ 80 cm | ≤ 30 kg |
+| XL | > 80 cm | > 30 kg |
+
+Descuento por volumen: **10 % desde 10 cajas** en un mismo envío. Las XL no entran en la base del descuento (precio a cotizar, no precio cerrado).
+
+`Recepcion.jsx` puede importar `sugerirTalla()` de aquí en lugar de mantener su propia copia.
 
 ## Pendientes conocidos
 

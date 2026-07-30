@@ -40,6 +40,7 @@ const Tarifas       = lazy(() => import('./pages/admin/Tarifas'))
 const Usuarios      = lazy(() => import('./pages/admin/Usuarios'))
 const Liquidaciones = lazy(() => import('./pages/admin/Liquidaciones'))
 const ReporteAdmin  = lazy(() => import('./pages/admin/ReporteAdmin'))
+const Calculadora   = lazy(() => import('./pages/admin/Calculadora'))
 
 // Gerencia — consola de escritorio. Todo el módulo va diferido: quien opera
 // desde el celular nunca descarga este código.
@@ -157,6 +158,9 @@ export default function App() {
         }/>
         <Route path="/admin/reportes" element={
           <PrivateRoute roles={['admin']}><ReporteAdmin /></PrivateRoute>
+        }/>
+        <Route path="/admin/calculadora" element={
+          <PrivateRoute roles={['admin']}><Calculadora /></PrivateRoute>
         }/>
 
         {/* ── Gerencia (escritorio) ── */}
