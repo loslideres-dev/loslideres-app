@@ -16,6 +16,7 @@ function buildDireccion(nombre, codigo) {
   return [
     `${nombre} · ${codigo}`,
     BODEGA_INFO.calle,
+    BODEGA_INFO.barrio,
     BODEGA_INFO.ciudad,
     BODEGA_INFO.pais,
     BODEGA_INFO.telefono,
