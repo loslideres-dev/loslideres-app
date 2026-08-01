@@ -40,7 +40,7 @@ export default function Casillero() {
   const perfilIncompleto = perfil && (!perfil.telefono || !perfil.direccion_entrega)
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(buildDireccion(BODEGA_INFO.contacto, codigo))
+    navigator.clipboard.writeText(buildDireccion(nombre, codigo))
     setToast(true)
   }
 
@@ -126,12 +126,13 @@ export default function Casillero() {
         )}
 
         {/* Dirección */}
-        <div className="mx-5 mt-4 bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="mx-5 mt-4 rounded-2xl overflow-hidden"
+          style={{ background: '#F0FAF4', border: '1.5px solid #6ECC97' }}>
           <div className="px-5 pt-5 pb-3">
             <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">DIRECCIÓN DE ENVÍO</p>
             <div className="space-y-1">
               {[
-                `${BODEGA_INFO.contacto} · ${codigo}`,
+                `${nombre} · ${codigo}`,
                 BODEGA_INFO.calle, BODEGA_INFO.barrio, BODEGA_INFO.ciudad, BODEGA_INFO.pais, BODEGA_INFO.telefono,
               ].map((line, i) => (
                 <p key={i} className={`text-sm ${i === 0 ? 'font-semibold text-slate-800' : 'text-slate-500'}`}>
