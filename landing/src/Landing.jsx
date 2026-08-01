@@ -389,7 +389,7 @@ export default function Landing() {
                 <a href={waLink('Hola, quiero información sobre los envíos a Venezuela.')} aria-label="WhatsApp">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 12a8 8 0 0 1-11.7 7l-4.3 1 1-4A8 8 0 1 1 20 12z"/><path d="M9 9c0 3 3 6 6 6M9 9c0-.5.5-1 1-1s1.5 2 1.5 2-1 1-.5 1.5 1.5 1.5 1.5 1.5 1.5-1 1.5-1 2 1 2 1"/></svg>
                 </a>
-                <a href="#" aria-label="Instagram">
+                <a href="https://www.instagram.com/loslideresencomiendas" target="_blank" rel="noreferrer" aria-label="Instagram">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1"/></svg>
                 </a>
                 <a href={`mailto:${EMAIL}`} aria-label="Correo">
@@ -435,6 +435,39 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* ---------------- INSTAGRAM FLOTANTE ---------------- */}
+      {/* bottom: 92 = 24 del borde + 52 del WA + 16 de gap */}
+      <a
+        href="https://www.instagram.com/loslideresencomiendas"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Síguenos en Instagram"
+        title="Síguenos en Instagram"
+        style={{
+          position: 'fixed',
+          bottom: 92,
+          right: 24,
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.22)',
+          zIndex: 999,
+          transition: 'transform .2s, box-shadow .2s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform='scale(1.1)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(0,0,0,0.30)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform='scale(1)';   e.currentTarget.style.boxShadow='0 4px 16px rgba(0,0,0,0.22)'; }}
+      >
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/>
+        </svg>
+      </a>
 
       {/* ---------------- WHATSAPP FLOAT ---------------- */}
       <a className="ll-wa" href={waLink('Hola, quiero información sobre los envíos a Venezuela.')} aria-label="Escríbenos por WhatsApp" target="_blank" rel="noopener noreferrer">
