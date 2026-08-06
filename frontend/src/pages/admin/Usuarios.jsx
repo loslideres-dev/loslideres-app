@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Users, Plus, Search, Loader2, Check, Phone, MapPin, Mail, Calendar } from 'lucide-react'
+import {
+  Users, Plus, Search, Loader2, Check, Phone, MapPin, Mail, Calendar,
+  Clock, ShieldAlert, ChevronDown,
+} from 'lucide-react'
 import { useUsuarios } from '../../hooks/usePerfiles'
-import { supabase } from '../../lib/supabase'
+import { tiempoRelativo, fechaLarga, fechaHora } from '../../lib/fechas'
 import { notificarAdmins } from '../../lib/notificar'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Modal from '../../components/ui/Modal'
@@ -26,12 +29,10 @@ const FORM_INICIAL = {
   nombre: '', email: '', password: '', rol: 'cliente',
 }
 
-// Roles que muestran teléfono y nombre en el detalle (además del cliente que ya los tiene)
-const ROLES_CON_CONTACTO = ['bodeguero', 'conductor', 'admin']
-
-function tieneRolContacto(roles = []) {
-  return roles.some(r => ROLES_CON_CONTACTO.includes(r))
-}
+// Cuántos usuarios se pintan de entrada. El resto se carga con "Ver más".
+// Render de una tanda, no scroll infinito: con el buscador activo el scroll
+// infinito se siente impredecible, y el volumen actual no lo justifica.
+const POR_TANDA = 15
 
 function mapsUrl(direccion) {
   const query = encodeURIComponent(`${direccion}, Maracaibo, Venezuela`)
@@ -46,14 +47,22 @@ export default function Usuarios() {
   const [creando,   setCreando]   = useState(false)
   const [detalle,   setDetalle]   = useState(null)
   const [toast,     setToast]     = useState({ show: false, msg: '', type: 'success' })
+  const [visibles,  setVisibles]  = useState(POR_TANDA)
 
   const { data: usuarios = [], isLoading, refetch } = useUsuarios(filtroRol)
 
   const filtrados = query
     ? usuarios.filter(u =>
         u.nombre?.toLowerCase().includes(query.toLowerCase()) ||
-        u.codigo_casillero?.toLowerCase().includes(query.toLowerCase()))
+        u.codigo_casillero?.toLowerCase().includes(query.toLowerCase()) ||
+        u.email?.toLowerCase().includes(query.toLowerCase()))
     : usuarios
+
+  // Solo se renderiza la tanda visible. Los filtros resetean el contador
+  // en su propio handler, no con un efecto: así no hay un render intermedio
+  // mostrando la tanda vieja sobre la lista nueva.
+  const mostrados = filtrados.slice(0, visibles)
+  const restantes = filtrados.length - mostrados.length
 
   const puedeCrear = form.nombre.trim() && form.email.trim() &&
     form.password.length >= 6 && !creando
@@ -110,8 +119,9 @@ export default function Usuarios() {
           <div className="relative flex-1">
             <Search size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="text" placeholder="Buscar por nombre o LID"
-              value={query} onChange={e => setQuery(e.target.value)}
+            <input type="text" placeholder="Buscar por nombre, LID o correo"
+              value={query}
+              onChange={e => { setQuery(e.target.value); setVisibles(POR_TANDA) }}
               className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200
                 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
@@ -126,7 +136,8 @@ export default function Usuarios() {
         {/* Filtros por rol */}
         <div className="flex gap-2 mb-4 overflow-x-auto">
           {[null, 'cliente', 'bodeguero', 'admin', 'conductor'].map(r => (
-            <button key={r ?? 'todos'} onClick={() => setFiltroRol(r)}
+            <button key={r ?? 'todos'}
+              onClick={() => { setFiltroRol(r); setVisibles(POR_TANDA) }}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border
                 whitespace-nowrap
                 ${filtroRol === r
@@ -144,7 +155,7 @@ export default function Usuarios() {
                 rounded-full animate-spin" />
             </div>
           : <div className="space-y-2">
-              {filtrados.map(u => (
+              {mostrados.map(u => (
                 <button key={u.id} onClick={() => setDetalle(u)}
                   className="w-full bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3
                     active:scale-95 transition text-left">
@@ -175,6 +186,23 @@ export default function Usuarios() {
                   </div>
                 </button>
               ))}
+              {restantes > 0 && (
+                <button onClick={() => setVisibles(v => v + POR_TANDA)}
+                  className="w-full py-3.5 rounded-2xl bg-white shadow-sm text-sm
+                    font-semibold flex items-center justify-center gap-2
+                    active:scale-95 transition"
+                  style={{ color: '#1565C0' }}>
+                  <ChevronDown size={16} />
+                  Ver más ({restantes})
+                </button>
+              )}
+
+              {filtrados.length > POR_TANDA && (
+                <p className="text-center text-xs text-slate-400 pt-1">
+                  Mostrando {mostrados.length} de {filtrados.length}
+                </p>
+              )}
+
               {filtrados.length === 0 && (
                 <div className="text-center py-14">
                   <Users size={44} className="text-slate-200 mx-auto mb-3" />
@@ -241,13 +269,49 @@ export default function Usuarios() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs text-slate-400">Correo electrónico</p>
-                    <p className="text-sm font-semibold text-slate-800 truncate"
+                    <p className="text-sm font-semibold truncate"
                       style={{ color: '#1565C0' }}>
                       {detalle.email}
                     </p>
+                    {/* Un correo sin confirmar suele ser la razón real
+                        de que alguien "no pueda entrar" a la app. */}
+                    {detalle.email_confirmado === null && (
+                      <span className="inline-flex items-center gap-1 text-[11px] mt-0.5"
+                        style={{ color: '#B45309' }}>
+                        <ShieldAlert size={11} /> Correo sin confirmar
+                      </span>
+                    )}
                   </div>
                 </a>
               )}
+
+              {/* Último acceso */}
+              <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center
+                  flex-shrink-0"
+                  style={{ background: detalle.ultimo_login ? '#E6F4EC' : '#F4F6FA' }}>
+                  <Clock size={15}
+                    style={{ color: detalle.ultimo_login ? '#1B7A3E' : '#94A3B8' }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-400">Último acceso</p>
+                  {detalle.ultimo_login ? (
+                    <>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {tiempoRelativo(detalle.ultimo_login)
+                          ?? fechaLarga(detalle.ultimo_login)}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {fechaHora(detalle.ultimo_login)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-medium text-slate-400">
+                      Nunca ha ingresado
+                    </p>
+                  )}
+                </div>
+              </div>
 
               {/* Teléfono — visible para todos los roles si existe */}
               {detalle.telefono && (
@@ -304,11 +368,7 @@ export default function Usuarios() {
                 <div>
                   <p className="text-xs text-slate-400">Registrado</p>
                   <p className="text-sm font-medium text-slate-800">
-                    {detalle.created_at
-                      ? new Date(detalle.created_at).toLocaleDateString('es-VE', {
-                          day: 'numeric', month: 'long', year: 'numeric'
-                        })
-                      : '—'}
+                    {fechaLarga(detalle.created_at)}
                   </p>
                 </div>
               </div>

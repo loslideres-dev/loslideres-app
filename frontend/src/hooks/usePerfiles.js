@@ -57,19 +57,40 @@ export function useActualizarPerfil() {
   })
 }
 
-// Todos los usuarios (admin)
+// Todos los usuarios (admin y gerencia)
+//
+// Usa la RPC `usuarios_admin()` en lugar de leer `perfiles` directo porque
+// `email` y `last_sign_in_at` viven en el esquema `auth`, al que la anon key
+// no tiene acceso. La función hace el join del lado del servidor y valida que
+// quien llama sea admin o gerente antes de devolver nada.
+//
+// El filtro por rol se aplica en el cliente: la lista completa de usuarios es
+// pequeña y ya se descarga entera, así que un round-trip por cada pestaña
+// de filtro no aporta.
 export function useUsuarios(rol = null) {
   return useQuery({
     queryKey: ['usuarios', rol],
     queryFn: async () => {
-      let q = supabase
-        .from('perfiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (rol) q = q.contains('roles', [rol])
-      const { data, error } = await q
-      if (error) throw error
-      return data
+      const { data, error } = await supabase.rpc('usuarios_admin')
+
+      if (error) {
+        // Respaldo: si la migración 12 todavía no se ejecutó, la pantalla
+        // sigue funcionando sin email ni último acceso, en vez de quedar
+        // en blanco con un error.
+        console.warn('usuarios_admin() no disponible, leyendo perfiles:', error.message)
+        let q = supabase
+          .from('perfiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+        if (rol) q = q.contains('roles', [rol])
+        const { data: respaldo, error: errorRespaldo } = await q
+        if (errorRespaldo) throw errorRespaldo
+        return respaldo
+      }
+
+      return rol
+        ? (data ?? []).filter(u => (u.roles ?? []).includes(rol))
+        : (data ?? [])
     },
     staleTime: 30_000,
   })

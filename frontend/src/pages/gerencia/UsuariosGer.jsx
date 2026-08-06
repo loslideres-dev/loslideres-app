@@ -2,8 +2,13 @@ import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import {
   Search, Plus, Loader2, Check, Phone, Mail, MapPin, Calendar, Users, X,
+  Clock, ShieldAlert,
 } from 'lucide-react'
 import { useUsuarios } from '../../hooks/usePerfiles'
+import {
+  tiempoRelativo, tiempoRelativoCorto, fechaCorta, fechaLarga, fechaHora,
+  colorActividad,
+} from '../../lib/fechas'
 import { notificarAdmins } from '../../lib/notificar'
 import GerenciaLayout from '../../components/layout/GerenciaLayout'
 
@@ -49,6 +54,7 @@ export default function UsuariosGer() {
     ? usuarios.filter(u =>
         u.nombre?.toLowerCase().includes(q) ||
         u.codigo_casillero?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
         u.telefono?.includes(q))
     : usuarios
 
@@ -95,7 +101,7 @@ export default function UsuariosGer() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2
               text-slate-400" />
             <input type="text" value={busca} onChange={e => setBusca(e.target.value)}
-              placeholder="Buscar por nombre, casillero o teléfono"
+              placeholder="Buscar por nombre, casillero, correo o teléfono"
               className="w-full pl-9 pr-9 py-2 rounded-lg border border-slate-200
                 text-[13px] outline-none focus:ring-2 focus:ring-blue-500" />
             {busca && (
@@ -128,6 +134,7 @@ export default function UsuariosGer() {
                   <Th>Teléfono</Th>
                   <Th>Roles</Th>
                   <Th align="center">Registrado</Th>
+                  <Th align="center">Último acceso</Th>
                   <Th align="right"></Th>
                 </tr>
               </thead>
@@ -169,10 +176,16 @@ export default function UsuariosGer() {
                     </Td>
                     <Td align="center">
                       <span className="text-[12px] text-slate-400">
-                        {u.created_at
-                          ? new Date(u.created_at).toLocaleDateString('es-VE',
-                              { day: '2-digit', month: 'short', year: '2-digit' })
-                          : '—'}
+                        {fechaCorta(u.created_at)}
+                      </span>
+                    </Td>
+                    <Td align="center">
+                      {/* El color deja leer la columna de un vistazo:
+                          verde = entró esta semana, gris = tibio, tenue = frío. */}
+                      <span className="text-[12px] font-medium"
+                        style={{ color: colorActividad(u.ultimo_login) }}
+                        title={u.ultimo_login ? fechaHora(u.ultimo_login) : 'Nunca ha ingresado'}>
+                        {u.ultimo_login ? tiempoRelativoCorto(u.ultimo_login) : 'Nunca'}
                       </span>
                     </Td>
                     <Td align="right">
@@ -322,7 +335,8 @@ function ModalDetalle({ usuario, onClose }) {
         )}
         {usuario.email && (
           <Dato icono={Mail} label="Correo" valor={usuario.email}
-            href={`mailto:${usuario.email}`} />
+            href={`mailto:${usuario.email}`}
+            aviso={usuario.email_confirmado === null ? 'Correo sin confirmar' : null} />
         )}
         {usuario.telefono && (
           <Dato icono={Phone} label="Teléfono" valor={usuario.telefono}
@@ -334,10 +348,14 @@ function ModalDetalle({ usuario, onClose }) {
             href={mapsUrl(usuario.direccion_entrega)} color="#B45309" nuevaPestana />
         )}
         <Dato icono={Calendar} label="Registrado"
-          valor={usuario.created_at
-            ? new Date(usuario.created_at).toLocaleDateString('es-VE',
-                { day: 'numeric', month: 'long', year: 'numeric' })
-            : '—'} />
+          valor={fechaLarga(usuario.created_at)} />
+
+        <Dato icono={Clock} label="Último acceso"
+          color={colorActividad(usuario.ultimo_login)}
+          valor={usuario.ultimo_login
+            ? (tiempoRelativo(usuario.ultimo_login) ?? fechaLarga(usuario.ultimo_login))
+            : 'Nunca ha ingresado'}
+          nota={usuario.ultimo_login ? fechaHora(usuario.ultimo_login) : null} />
       </div>
     </Overlay>
   )
@@ -358,7 +376,8 @@ function Campo({ label, nota, children }) {
   )
 }
 
-function Dato({ icono: Icono, label, valor, href, color, mono, nuevaPestana }) {
+function Dato({ icono: Icono, label, valor, href, color, mono, nuevaPestana,
+                nota, aviso }) {
   const contenido = (
     <>
       <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -368,10 +387,19 @@ function Dato({ icono: Icono, label, valor, href, color, mono, nuevaPestana }) {
       <div className="min-w-0">
         <p className="text-[11px] text-slate-400">{label}</p>
         <p className="text-[13px] font-medium break-words"
-          style={{ color: href ? (color ?? '#1565C0') : '#334155',
+          style={{ color: href ? (color ?? '#1565C0') : (color ?? '#334155'),
                    fontFamily: mono ? MONO : undefined }}>
           {valor}
         </p>
+        {nota && <p className="text-[11px] text-slate-400 mt-0.5">{nota}</p>}
+        {/* Un correo sin confirmar suele ser la razón real de que
+            alguien reporte que "no puede entrar" a la app. */}
+        {aviso && (
+          <span className="inline-flex items-center gap-1 text-[11px] mt-0.5"
+            style={{ color: '#B45309' }}>
+            <ShieldAlert size={11} /> {aviso}
+          </span>
+        )}
       </div>
     </>
   )
