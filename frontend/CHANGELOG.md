@@ -1,6 +1,59 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [0.8.0] — 2026-08-06
+
+### ✨ Pre-alertas (cliente avisa qué viene)
+
+* **Nueva pestaña "Avisar"** en la app del cliente: informa tienda, descripción y número de guía de un paquete antes de que llegue a Maicao. La bodega recibe una notificación con el nombre y el casillero de quien avisó.
+* Tabla `prealertas` **separada de `paquetes`** a propósito: una pre-alerta es una expectativa y muchas nunca llegan; si vivieran en `paquetes` ensuciarían el corredor del panel, las métricas de SLA y los reportes de gerencia.
+* El cliente puede cancelar una pre-alerta pendiente, pero **no marcarla como recibida** — la política de RLS lo impide a nivel de base de datos, no solo en la interfaz.
+* Vista `prealertas_con_cliente` e índice por `tracking`, para que la bodega pueda identificar una caja a partir de la guía impresa.
+* Tarjeta de acceso en Casillero que cambia según el estado: invita a avisar si no hay nada pendiente, o informa cuántos paquetes se están esperando.
+* Paso nuevo en la sección "Cómo comprar" del Casillero, con enlace directo a la pestaña.
+
+### ✨ Header unificado del cliente
+
+* Componente `ClienteHeader` único para las cuatro pantallas. Antes cada una armaba el suyo: en Paquetes no había forma de cerrar sesión y en Perfil no se veían las notificaciones.
+* Campana, avatar y salir siempre en la misma posición. El avatar es tocable y lleva al perfil.
+* Cuarta pestaña en la barra inferior.
+* Tour de bienvenida ampliado a cinco pasos, con la explicación de la pre-alerta.
+
+### ✨ Cartera de clientes (Gerencia)
+
+* **Nueva pantalla `/gerencia/clientes`**: ranking por facturación, ticket promedio, frecuencia de envío y días desde el último paquete.
+* Clasificación por actividad — activo (≤45 días), en riesgo (≤90), dormido (>90) y registrados que nunca enviaron.
+* Métrica de **concentración top 5**: qué porcentaje de la facturación depende de cinco clientes. Se marca en rojo pasando el 50 %.
+* Botón de WhatsApp para reactivar, visible solo en clientes en riesgo o dormidos.
+* Exportación a CSV.
+
+### ✨ Usuarios con correo y último acceso
+
+* RPC `usuarios_admin()` que hace el join con `auth.users` validando rol admin o gerente antes de devolver datos. `email` y `last_sign_in_at` no son legibles desde `perfiles` con la anon key.
+* Admin: listado paginado en tandas de 15 con botón "Ver más"; el buscador cubre también el correo.
+* Gerencia: columna "Último acceso" con semáforo por antigüedad — verde activo, gris tibio, tenue frío.
+* Aviso cuando el correo está sin confirmar, que suele ser la causa real de que alguien reporte que no puede entrar.
+
+### 🔧 Correcciones
+
+* **Casillero**: la dirección de envío mostraba el nombre del contacto de bodega en lugar del nombre del cliente, tanto en pantalla como al copiar. Al copiar faltaba además la línea del barrio.
+* Tarjeta de dirección resaltada en verde para que se distinga como el dato a copiar.
+
+### 🎨 Landing
+
+* Botón flotante de Instagram junto al de WhatsApp, en SVG inline sin depender de archivos externos.
+* Enlace de Instagram del footer apuntando a la cuenta real.
+
+### 🏗️ Técnico
+
+* `lib/fechas.js` — formato de fechas y tiempo relativo compartido entre admin y gerencia.
+
+### 🗄️ Base de datos (SQL ejecutados)
+
+* `12_usuarios_email_login.sql` — función `usuarios_admin()` con validación de rol.
+* `13_prealertas.sql` — tabla `prealertas`, vista `prealertas_con_cliente`, RLS por rol e índices.
+
+
 ## [0.7.0] — 2026-07-30
 
 ### ✨ Calculadora de cotización

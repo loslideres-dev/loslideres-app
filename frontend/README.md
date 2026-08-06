@@ -2,7 +2,7 @@
 > App multi-rol para gestión de encomiendas puerta a puerta, de Maicao (Colombia) a Maracaibo (Venezuela)
 
 ![Status](https://img.shields.io/badge/status-producción-green)
-![Version](https://img.shields.io/badge/version-v0.7.0-blue)
+![Version](https://img.shields.io/badge/version-v0.8.0-blue)
 ![Stack](https://img.shields.io/badge/stack-React%20%7C%20Supabase%20%7C%20Railway-orange)
 
 ## URLs en producción
@@ -72,6 +72,47 @@ Cuando un paquete llega con flete por cobrar (Servientrega cobro a destino):
 2. El admin ve el aviso al tarifar y ajusta el precio si corresponde.
 3. El monto se suma como devolución en la liquidación del bodeguero, separado de su comisión.
 4. El cliente ve una tarjeta ámbar en el detalle de su paquete explicando el cargo.
+
+## Pre-alertas
+
+El cliente avisa desde la app que viene un paquete, antes de que llegue a Maicao:
+tienda, descripción y número de guía. La bodega recibe una notificación y sabe
+qué esperar, lo que permite identificar cajas que lleguen sin el código de casillero.
+
+Viven en la tabla `prealertas`, **separadas de `paquetes`**: una pre-alerta es una
+expectativa y muchas nunca llegan. Si vivieran en `paquetes` con un estado propio,
+cada aviso fallido ensuciaría el corredor del panel, las métricas de SLA y los
+reportes de gerencia.
+
+| Estado | Significado |
+|---|---|
+| `PENDIENTE` | El cliente avisó y todavía no llega |
+| `RECIBIDA` | Llegó y se enlazó con un paquete real (`paquete_id`) |
+| `CANCELADA` | El cliente la retiró |
+
+El cliente solo puede cancelar; marcarla como recibida es potestad de la bodega
+y lo impide la política de RLS, no solo la interfaz.
+
+> **Pendiente (fase 2)**: enlazar la pre-alerta al paquete desde `Recepcion.jsx`.
+> Hoy la bodega recibe el aviso por notificación pero `paquete_id` queda vacío.
+> Falta también decidir qué hacer con las pre-alertas que nunca llegan.
+
+## Cartera de clientes (Gerencia)
+
+Pantalla `/gerencia/clientes`. Facturación, ticket promedio y frecuencia por
+cliente, con clasificación por actividad:
+
+| Estado | Días desde el último envío |
+|---|---|
+| Activo | ≤ 45 |
+| En riesgo | 46 – 90 |
+| Dormido | > 90 |
+| Sin envíos | Registrado, nunca envió |
+
+Incluye concentración top 5 (qué parte del ingreso depende de cinco clientes) y
+botón de WhatsApp para reactivar a los que se enfriaron. La agregación corre en
+el navegador; superadas unas pocas miles de filas en `paquetes` debe mudarse a
+un RPC en Postgres.
 
 ## Multi-moneda
 
@@ -150,6 +191,10 @@ Bodegueros cobran: comisión (tarifa × paquetes) + reembolso de fletes de cobro
 | Calculadora de cotización con WhatsApp | v0.7.0 |
 | Lista de precios estándar por WhatsApp | v0.7.0 |
 | Dashboard con stats compactos en grilla | v0.7.0 |
+| Pre-alertas: el cliente avisa qué viene | v0.8.0 |
+| Header unificado en las 4 pantallas del cliente | v0.8.0 |
+| Cartera de clientes en Gerencia | v0.8.0 |
+| Correo y último acceso en gestión de usuarios | v0.8.0 |
 
 ## Setup local
 
@@ -166,7 +211,7 @@ npm run dev
 ```env
 VITE_SUPABASE_URL=https://kcmasyggaaclpkojohky.supabase.co
 VITE_SUPABASE_ANON_KEY=tu_anon_key
-VITE_APP_VERSION=0.7.0
+VITE_APP_VERSION=0.8.0
 VITE_APP_NAME=Los Líderes Encomiendas
 ```
 
@@ -195,6 +240,8 @@ Railway despliega automáticamente. El build number se genera con `gen-version.j
 09_rol_gerente.sql          Rol gerente + funciones de permisos
 10_contabilidad.sql         Gastos, cierres, socios, distribuciones
 11_cobro_destino.sql        Cobro a destino en bodega
+12_usuarios_email_login.sql Función usuarios_admin() con email y último acceso
+13_prealertas.sql           Pre-alertas del cliente + vista y RLS
 ```
 
 ## Roadmap
@@ -224,6 +271,8 @@ Descuento por volumen: **10 % desde 10 cajas** en un mismo envío. Las XL no ent
 - Dark mode Samsung Internet via WhatsApp (requiere PWA).
 - Campo `email` en detalle de usuario del admin (requiere join con `auth.users`).
 - Auditoría: los triggers de BD que registran cambios automáticamente están pendientes para G4.
+- Pre-alertas: falta enlazarlas al paquete desde Recepción (fase 2) y definir el vencimiento de las que nunca llegan.
+- `Recepcion.jsx` mantiene su propia copia de la sugerencia de talla; debería importar de `lib/tallas.js`.
 
 ## Autor
 
