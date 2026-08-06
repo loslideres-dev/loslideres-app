@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Activity, Receipt, Wallet, PieChart,
-  Users, Settings, ScrollText, LogOut, Smartphone, Handshake,
+  Users, Settings, ScrollText, LogOut, Smartphone, Handshake, UserRound,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
@@ -20,8 +20,9 @@ const SECCIONES = [
   {
     titulo: 'Operación',
     items: [
-      { label: 'Paquetes',      icon: Package,  path: '/gerencia/paquetes' },
-      { label: 'SLA y atascos', icon: Activity, path: '/gerencia/sla' },
+      { label: 'Paquetes',      icon: Package,    path: '/gerencia/paquetes' },
+      { label: 'Clientes',      icon: UserRound,  path: '/gerencia/clientes' },
+      { label: 'SLA y atascos', icon: Activity,   path: '/gerencia/sla' },
     ],
   },
   {
