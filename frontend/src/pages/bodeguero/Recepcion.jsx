@@ -1,11 +1,16 @@
 import { useState, useRef } from 'react'
 import {
   Camera, Image as ImageIcon, Search, Package, Check, X, Loader2, AlertCircle,
-  Receipt, FileText,
+  Receipt, FileText, PackagePlus, Link2, Plus,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useBuscarCliente } from '../../hooks/usePerfiles'
 import { useRegistrarPaquete } from '../../hooks/usePaquetes'
+import {
+  usePrealertasDeCliente, useEnlazarPrealerta, useBuscarPorGuia,
+} from '../../hooks/usePrealertas'
+import { tiempoRelativo, fechaCorta } from '../../lib/fechas'
+import { sugerirTalla } from '../../lib/tallas'
 import { supabase } from '../../lib/supabase'
 import { comprimirImagen } from '../../lib/imageUtils'
 import { TAMANIOS } from '../../constants/roles'
@@ -13,16 +18,6 @@ import BodegueroLayout from '../../components/layout/BodegueroLayout'
 import Toast from '../../components/ui/Toast'
 
 const MAX_KB = 300
-
-// Sugerencia de tamaño según el lado más largo (en cm)
-function sugerirTamanio(l, a, h) {
-  const m = Math.max(Number(l) || 0, Number(a) || 0, Number(h) || 0)
-  if (!m)       return ''
-  if (m <= 30)  return 'S'
-  if (m <= 50)  return 'M'
-  if (m <= 80)  return 'L'
-  return 'XL'
-}
 
 export default function Recepcion() {
   const { user } = useAuthStore()
@@ -61,15 +56,32 @@ export default function Recepcion() {
   const [toast, setToast] = useState({ show: false, msg: '', type: 'success' })
   const [ultimoRegistro, setUltimoRegistro] = useState(null)
 
+  // Pre-alertas: qué avisó este cliente que venía en camino
+  const [modalAvisos, setModalAvisos] = useState(false)
+  const [prealertaSel, setPrealertaSel] = useState(null)
+
   const { data: resultados = [], isLoading: buscando } = useBuscarCliente(query)
   const { mutateAsync: registrar, isPending: guardando } = useRegistrarPaquete()
+  const { data: avisos = [] } = usePrealertasDeCliente(clienteSel?.id)
+  const { data: porGuia = [] } = useBuscarPorGuia(query)
+  const { mutateAsync: enlazar } = useEnlazarPrealerta()
 
   // ── Medidas: al cambiar, sugerir tamaño si no fue elegido a mano ────────────
+  //
+  // Usa lib/tallas.js, la misma fuente que la calculadora de cotización del
+  // admin. Antes había aquí una copia local que solo miraba el lado más largo:
+  // una caja de 30 cm con 20 kg salía S aquí y L en la cotización, y se
+  // cotizaba un precio para terminar cobrando otro.
   const setMedida = (campo, valor) => {
     setForm(f => {
       const nuevo = { ...f, [campo]: valor }
       if (!tamanioManual) {
-        nuevo.tamanio = sugerirTamanio(nuevo.largo_cm, nuevo.ancho_cm, nuevo.alto_cm)
+        nuevo.tamanio = sugerirTalla({
+          largo: nuevo.largo_cm,
+          ancho: nuevo.ancho_cm,
+          alto:  nuevo.alto_cm,
+          peso:  nuevo.peso_kg,
+        })
       }
       return nuevo
     })
@@ -177,10 +189,23 @@ export default function Recepcion() {
         comprobante_cobro_url: comprobanteUrl,
       })
 
+      // 4. Cerrar la pre-alerta si el bodeguero la enlazó.
+      //    Va después del registro y en su propio try: el paquete ya está
+      //    guardado y un fallo aquí no puede tumbar el flujo. Si falla, la
+      //    pre-alerta queda pendiente y aparece en Gerencia → Avisados.
+      if (prealertaSel) {
+        try {
+          await enlazar({ prealertaId: prealertaSel.id, paqueteId: data.id })
+        } catch (e) {
+          console.error('No se pudo enlazar la pre-alerta:', e)
+        }
+      }
+
       setUltimoRegistro({
         codigo: data.codigo,
         cliente: clienteSel.nombre,
         cobro: cobroDestino ? parseFloat(montoCobro) : null,
+        aviso: prealertaSel ? prealertaSel.descripcion : null,
       })
       setStep(3)
     } catch (err) {
@@ -189,10 +214,41 @@ export default function Recepcion() {
     }
   }
 
+  // Elegir por guía identifica cliente Y paquete de una vez, así que no se
+  // abre el modal: preguntar "¿cuál de estos es?" cuando la guía ya lo dijo
+  // sería hacerle repetir la decisión al bodeguero.
+  const tomarPorGuia = (pa) => {
+    setClienteSel({
+      id:               pa.cliente_id,
+      nombre:           pa.cliente_nombre,
+      codigo_casillero: pa.cliente_codigo,
+    })
+    setStep(2)
+    tomarAviso(pa)
+  }
+
+  // Tomar un aviso: rellena lo que el cliente ya dijo para no teclearlo de nuevo,
+  // y deja la pre-alerta marcada para enlazarla cuando el paquete se guarde.
+  const tomarAviso = (pa) => {
+    setPrealertaSel(pa)
+    setForm(f => ({
+      ...f,
+      tienda:           pa.tienda ?? f.tienda,
+      descripcion:      pa.descripcion ?? f.descripcion,
+      tracking_externo: pa.tracking ?? f.tracking_externo,
+    }))
+    setModalAvisos(false)
+  }
+
+  // Soltar el aviso no borra lo ya escrito: el bodeguero pudo haber corregido
+  // la descripción y perderla sería peor que dejar campos de más.
+  const soltarAviso = () => setPrealertaSel(null)
+
   const resetTodo = () => {
     quitarFoto()
     setStep(1); setQuery(''); setClienteSel(null)
     setTamanioManual(false)
+    setPrealertaSel(null); setModalAvisos(false)
     setForm({
       tracking_externo: '', descripcion: '', tienda: '',
       largo_cm: '', ancho_cm: '', alto_cm: '', peso_kg: '',
@@ -235,7 +291,7 @@ export default function Recepcion() {
                 type="text"
                 inputMode="text"
                 autoCapitalize="characters"
-                placeholder="LID-0001 o nombre del cliente"
+                placeholder="LID-0001, nombre o número de guía"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 className="w-full pl-10 pr-10 py-3.5 rounded-xl border border-slate-200
@@ -247,11 +303,47 @@ export default function Recepcion() {
               )}
             </div>
 
+            {/* Resultados por guía. Van primero porque son de mayor certeza:
+                una guía identifica un paquete concreto, un nombre solo apunta
+                a una persona. */}
+            {porGuia.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs font-semibold tracking-wider mb-2"
+                  style={{ color: '#1B7A3E' }}>
+                  ENCONTRADO POR GUÍA
+                </p>
+                <div className="space-y-2">
+                  {porGuia.map(pa => (
+                    <button key={pa.id} onClick={() => tomarPorGuia(pa)}
+                      className="w-full rounded-xl p-4 text-left active:scale-95 transition"
+                      style={{ background: '#E6F4EC', border: '1px solid #A7D8BC' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Link2 size={14} style={{ color: '#1B7A3E' }} />
+                        <span className="font-mono font-bold text-sm break-all"
+                          style={{ color: '#14532D', letterSpacing: 0.5 }}>
+                          {pa.tracking}
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {pa.cliente_nombre}
+                      </p>
+                      <p className="text-xs font-mono" style={{ color: '#1B7A3E' }}>
+                        {pa.cliente_codigo}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1 break-words">
+                        {pa.tienda} · {pa.descripcion}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {resultados.length > 0 && (
               <div className="space-y-2">
                 {resultados.map(c => (
                   <button key={c.id}
-                    onClick={() => { setClienteSel(c); setStep(2) }}
+                    onClick={() => { setClienteSel(c); setStep(2); setModalAvisos(true) }}
                     className="w-full bg-white rounded-xl p-4 flex items-center gap-3
                       border border-slate-100 active:scale-95 transition text-left">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center
@@ -272,12 +364,14 @@ export default function Recepcion() {
               </div>
             )}
 
-            {query.length >= 2 && !buscando && resultados.length === 0 && (
+            {query.length >= 2 && !buscando && resultados.length === 0
+              && porGuia.length === 0 && (
               <div className="text-center py-10">
                 <Package size={36} className="text-slate-200 mx-auto mb-2" />
                 <p className="text-slate-500 text-sm">No se encontró ningún cliente</p>
                 <p className="text-slate-400 text-xs mt-1">
-                  Verifica el código o consulta con Administración
+                  Probaste con nombre, casillero y guía. Verifica el dato o
+                  consulta con Administración.
                 </p>
               </div>
             )}
@@ -310,6 +404,47 @@ export default function Recepcion() {
                 <X size={16} />
               </button>
             </div>
+
+            {/* Aviso enlazado. Visible durante todo el registro para que el
+                bodeguero sepa que este paquete cierra una pre-alerta. */}
+            {prealertaSel && (
+              <div className="rounded-xl px-4 py-3 mb-4 flex items-start gap-3"
+                style={{ background: '#E6F4EC', border: '1px solid #A7D8BC' }}>
+                <Link2 size={16} className="flex-shrink-0 mt-0.5"
+                  style={{ color: '#1B7A3E' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold" style={{ color: '#14532D' }}>
+                    Enlazado al aviso del cliente
+                  </p>
+                  <p className="text-xs mt-0.5 break-words" style={{ color: '#1B7A3E' }}>
+                    {prealertaSel.tienda} · {prealertaSel.descripcion}
+                  </p>
+                </div>
+                <button onClick={soltarAviso} aria-label="Soltar aviso"
+                  className="flex-shrink-0 p-1 active:scale-90"
+                  style={{ color: '#1B7A3E' }}>
+                  <X size={15} />
+                </button>
+              </div>
+            )}
+
+            {/* Si lo cerró sin elegir, puede volver a abrirlo */}
+            {!prealertaSel && avisos.length > 0 && (
+              <button onClick={() => setModalAvisos(true)}
+                className="w-full rounded-xl px-4 py-3 mb-4 flex items-center gap-3
+                  active:scale-95 transition text-left"
+                style={{ background: '#FEF3C7', border: '1px solid #FDE68A' }}>
+                <PackagePlus size={16} className="flex-shrink-0"
+                  style={{ color: '#B45309' }} />
+                <p className="text-xs font-semibold flex-1" style={{ color: '#92400E' }}>
+                  Este cliente avisó {avisos.length}{' '}
+                  {avisos.length === 1 ? 'paquete' : 'paquetes'} en camino
+                </p>
+                <span className="text-xs font-bold" style={{ color: '#B45309' }}>
+                  Ver
+                </span>
+              </button>
+            )}
 
             {/* ── FOTO ── */}
             <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
@@ -413,7 +548,7 @@ export default function Recepcion() {
             </div>
             <input type="number" inputMode="decimal" placeholder="Peso (kg)"
               value={form.peso_kg}
-              onChange={e => setForm(f => ({ ...f, peso_kg: e.target.value }))}
+              onChange={e => setMedida('peso_kg', e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white
                 text-sm outline-none focus:ring-2 focus:ring-blue-500 mb-4" />
 
@@ -641,6 +776,16 @@ export default function Recepcion() {
                 </p>
               </div>
             )}
+            {ultimoRegistro?.aviso && (
+              <div className="px-4 py-3 rounded-xl mb-4 flex items-center gap-2.5"
+                style={{ background: '#E6F4EC', border: '1px solid #A7D8BC' }}>
+                <Link2 size={16} style={{ color: '#1B7A3E' }} />
+                <p className="text-xs text-left" style={{ color: '#14532D' }}>
+                  Se cerró el aviso del cliente:{' '}
+                  <span className="font-bold">{ultimoRegistro.aviso}</span>.
+                </p>
+              </div>
+            )}
             <p className="text-slate-400 text-xs mb-8">
               Administración lo verá en su bandeja para asignarle el precio.
             </p>
@@ -654,6 +799,94 @@ export default function Recepcion() {
         )}
 
       </div>
+
+      {/* ════════ MODAL · PRE-ALERTAS DEL CLIENTE ════════
+          Se abre solo si el cliente avisó algo. Interrumpe a propósito:
+          si el bodeguero no enlaza, la pre-alerta queda abierta para siempre
+          y la función entera deja de servir. */}
+      {modalAvisos && avisos.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: 'rgba(13,43,94,0.6)' }}
+          onClick={() => setModalAvisos(false)}>
+          <div className="w-full max-w-lg bg-white rounded-t-3xl p-6 pb-8
+            max-h-[85vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}>
+
+            <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
+
+            <div className="flex items-start gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center
+                flex-shrink-0" style={{ background: '#FEF3C7' }}>
+                <PackagePlus size={20} style={{ color: '#B45309' }} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-base font-bold text-slate-800">
+                  {clienteSel?.nombre} avisó {avisos.length}{' '}
+                  {avisos.length === 1 ? 'paquete' : 'paquetes'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  ¿El que tienes en la mano es alguno de estos?
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 mt-5 mb-4">
+              {avisos.map(pa => (
+                <button key={pa.id} onClick={() => tomarAviso(pa)}
+                  className="w-full rounded-xl p-4 text-left active:scale-95 transition
+                    border border-slate-200 bg-white">
+
+                  {/* La guía va primero y grande: es el único dato que el
+                      bodeguero puede cotejar contra la etiqueta de la caja que
+                      tiene en la mano. La tienda y la descripción son contexto. */}
+                  {pa.tracking ? (
+                    <div className="rounded-lg px-3 py-2.5 mb-3"
+                      style={{ background: '#F1F5F9' }}>
+                      <p className="text-[10px] font-semibold tracking-wider mb-1"
+                        style={{ color: '#64748B' }}>
+                        GUÍA A COMPARAR
+                      </p>
+                      <p className="font-mono font-bold break-all leading-tight"
+                        style={{ fontSize: 22, color: '#0D2B5E', letterSpacing: 1 }}>
+                        {pa.tracking}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg px-3 py-2 mb-3"
+                      style={{ background: '#FFFBEB' }}>
+                      <p className="text-[11px] font-semibold" style={{ color: '#B45309' }}>
+                        Sin guía — compara por tienda y contenido
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="text-sm font-semibold text-slate-800 break-words">
+                    {pa.descripcion}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: '#EEF2F8', color: '#1565C0' }}>
+                      {pa.tienda}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Avisado {tiempoRelativo(pa.created_at) ?? fechaCorta(pa.created_at)}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Registrar sin enlazar queda como opción secundaria a propósito:
+                si tuviera el mismo peso visual, se volvería el reflejo. */}
+            <button onClick={() => setModalAvisos(false)}
+              className="w-full py-3.5 rounded-xl border border-slate-200 bg-white
+                text-sm font-semibold text-slate-500 flex items-center
+                justify-center gap-2 active:scale-95 transition">
+              <Plus size={16} /> Ninguno, es un paquete nuevo
+            </button>
+          </div>
+        </div>
+      )}
     </BodegueroLayout>
   )
 }
