@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Package, MapPin, Bell, ArrowRight, X } from 'lucide-react'
+import { Package, MapPin, Bell, PackagePlus, ArrowRight, X } from 'lucide-react'
 
 const PASOS = [
   {
@@ -18,7 +18,13 @@ const PASOS = [
     icon:  Bell,
     color: '#8B5CF6',
     title: 'Te avisamos en cada paso',
-    desc:  'Recibirás una notificación por WhatsApp cuando tu paquete llegue a la bodega, cuando tenga precio asignado y cuando esté en camino.',
+    desc:  'Te escribimos por WhatsApp y te avisamos en la app cuando tu paquete llegue a la bodega, cuando tenga precio asignado y cuando salga en camino a Maracaibo.',
+  },
+  {
+    icon:  PackagePlus,
+    color: '#B45309',
+    title: 'Avísanos qué viene',
+    desc:  'Cuando compres algo, cuéntanos desde la pestaña Avisar qué es y de qué tienda viene. Así lo reconocemos apenas llegue, aunque la caja venga sin tu código.',
   },
   {
     icon:  MapPin,

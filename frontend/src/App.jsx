@@ -22,6 +22,7 @@ const Casillero       = lazy(() => import('./pages/cliente/Casillero'))
 const PaquetesCliente = lazy(() => import('./pages/cliente/PaquetesCliente'))
 const DetallePaquete  = lazy(() => import('./pages/cliente/DetallePaquete'))
 const Perfil          = lazy(() => import('./pages/cliente/Perfil'))
+const PreAlertas      = lazy(() => import('./pages/cliente/PreAlertas'))
 
 // Bodeguero
 const Recepcion        = lazy(() => import('./pages/bodeguero/Recepcion'))
@@ -50,6 +51,7 @@ const GerenciaResultados = lazy(() => import('./pages/gerencia/Resultados'))
 const GerenciaReparto    = lazy(() => import('./pages/gerencia/Reparto'))
 const GerenciaCierres    = lazy(() => import('./pages/gerencia/Cierres'))
 const GerenciaPaquetes   = lazy(() => import('./pages/gerencia/PaquetesGer'))
+const GerenciaClientes   = lazy(() => import('./pages/gerencia/Clientes'))
 const GerenciaUsuarios   = lazy(() => import('./pages/gerencia/UsuariosGer'))
 const GerenciaAjustes    = lazy(() => import('./pages/gerencia/Ajustes'))
 const GerenciaAuditoria  = lazy(() => import('./pages/gerencia/Auditoria'))
@@ -117,6 +119,9 @@ export default function App() {
         <Route path="/cliente/paquetes/:id" element={
           <PrivateRoute roles={['cliente','admin']}><DetallePaquete /></PrivateRoute>
         }/>
+        <Route path="/cliente/avisar" element={
+          <PrivateRoute roles={['cliente','admin']}><PreAlertas /></PrivateRoute>
+        }/>
         <Route path="/cliente/perfil" element={
           <PrivateRoute roles={['cliente','admin']}><Perfil /></PrivateRoute>
         }/>
@@ -169,6 +174,9 @@ export default function App() {
         }/>
         <Route path="/gerencia/paquetes" element={
           <PrivateRoute roles={['gerente']}><GerenciaPaquetes /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/clientes" element={
+          <PrivateRoute roles={['gerente']}><GerenciaClientes /></PrivateRoute>
         }/>
         <Route path="/gerencia/sla" element={
           <PrivateRoute roles={['gerente']}><GerenciaSLA /></PrivateRoute>

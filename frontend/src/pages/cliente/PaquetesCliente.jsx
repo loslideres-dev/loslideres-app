@@ -5,8 +5,8 @@ import { useAuthStore } from '../../store/authStore'
 import { usePaquetes } from '../../hooks/usePaquetes'
 import { useMiPerfil } from '../../hooks/usePerfiles'
 import ClienteLayout from '../../components/layout/ClienteLayout'
+import ClienteHeader from '../../components/layout/ClienteHeader'
 import EstadoBadge from '../../components/ui/EstadoBadge'
-import NotifBell from '../../components/ui/NotifBell'
 
 const FILTROS = [
   { label: 'Todos',       value: null          },
@@ -124,25 +124,19 @@ export default function PaquetesCliente() {
   return (
     <ClienteLayout>
 
-      {/* ── Header (fijo) ── */}
-      <div className="flex-shrink-0 px-5 pt-12 pb-5" style={{ background: '#0D2B5E' }}>
-        <div className="flex items-center justify-between mb-1">
-          <div>
-            <p className="text-sky-300 text-xs mb-0.5">Casillero {codigo}</p>
-            <h1 className="text-white text-xl font-bold">Mis paquetes</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <NotifBell />
-            <button onClick={() => refetch()}
-              className="text-slate-400 hover:text-white transition p-1">
-              <RefreshCw size={18} />
-            </button>
-          </div>
-        </div>
-
+      <ClienteHeader
+        subtitulo={`Casillero ${codigo}`}
+        titulo="Mis paquetes"
+        acciones={
+          <button onClick={() => refetch()} aria-label="Actualizar"
+            className="text-slate-400 hover:text-white transition p-1 active:scale-95">
+            <RefreshCw size={18} />
+          </button>
+        }
+      >
         {/* Contadores */}
         {!isLoading && (
-          <div className="flex gap-3 mt-4">
+          <div className="flex gap-3">
             {[
               { label: 'En tránsito', value: enTransito },
               { label: 'Entregados',  value: entregados },
@@ -156,7 +150,7 @@ export default function PaquetesCliente() {
             ))}
           </div>
         )}
-      </div>
+      </ClienteHeader>
 
       {/* ── Filtros (fijos) ── */}
       <div className="flex-shrink-0 px-5 py-3 overflow-x-auto bg-[#F4F6FA]">

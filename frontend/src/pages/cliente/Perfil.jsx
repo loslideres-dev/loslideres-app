@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
 import { useMiPerfil, useActualizarPerfil } from '../../hooks/usePerfiles'
 import ClienteLayout from '../../components/layout/ClienteLayout'
+import ClienteHeader from '../../components/layout/ClienteHeader'
 import Toast from '../../components/ui/Toast'
 
 export default function Perfil() {
@@ -50,17 +51,21 @@ export default function Perfil() {
       <Toast message={toast.msg} show={toast.show} type={toast.type}
         onHide={() => setToast(t => ({ ...t, show: false }))} />
 
-      {/* Header (fijo) */}
-      <div className="flex-shrink-0 px-5 pt-12 pb-8 flex flex-col items-center"
-        style={{ background: '#0D2B5E' }}>
-        <div className="w-20 h-20 rounded-full flex items-center justify-center
-          text-white text-2xl font-black mb-3" style={{ background: '#1565C0' }}>
-          {initials}
+      <ClienteHeader subtitulo="MI PERFIL" titulo={perfil?.nombre ?? '—'}>
+        {/* Identidad: baja del header al bloque azul para no competir con
+            los iconos de la barra, que ahora son iguales en toda la app. */}
+        <div className="flex items-center gap-4 rounded-2xl px-4 py-3"
+          style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center
+            text-white text-lg font-black flex-shrink-0" style={{ background: '#1565C0' }}>
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sky-300 text-sm font-mono font-bold">{codigo}</p>
+            <p className="text-slate-400 text-xs truncate">{user?.email}</p>
+          </div>
         </div>
-        <p className="text-white text-lg font-bold">{perfil?.nombre ?? '—'}</p>
-        <p className="text-sky-300 text-xs font-mono mt-1">{codigo}</p>
-        <p className="text-slate-400 text-xs mt-0.5">{user?.email}</p>
-      </div>
+      </ClienteHeader>
 
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4 pb-6">
 
