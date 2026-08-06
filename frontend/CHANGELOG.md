@@ -1,6 +1,77 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [1.0.0] — 2026-08-06
+
+**Primera versión estable.** El negocio opera completo sobre el sistema: desde que
+el cliente avisa una compra hasta que se reparte la utilidad entre los socios.
+
+### Qué es el sistema a partir de esta versión
+
+Una aplicación web multi-rol que digitaliza el corredor Maicao → Maracaibo. Cinco
+roles con su propia experiencia —cliente, bodeguero, conductor, administración y
+gerencia— sobre una sola base de datos con seguridad a nivel de fila.
+
+| Dominio | Qué resuelve |
+|---|---|
+| **Casillero** | Cada cliente tiene un código LID y una dirección lista para pegar al comprar |
+| **Pre-alerta** | El cliente avisa qué viene; la bodega identifica la caja aunque llegue sin código |
+| **Recepción** | Registro con foto, medidas, peso y guía del courier; talla sugerida automáticamente |
+| **Tarifación** | Precio por tabla editable, con conductor y traslado asignados en una pantalla |
+| **Reparto** | Estados rastreables por el cliente, con foto de entrega como comprobante |
+| **Cobro a destino** | Fletes que el bodeguero adelanta, reembolsados en su liquidación |
+| **Liquidaciones** | Cierres atómicos por persona, marcados por clave foránea y no por fechas |
+| **Contabilidad** | Estado de resultados mensual que se congela al cerrar; nunca se recalcula |
+| **Socios** | Participación con vigencia histórica y distribuciones por cierre |
+| **Cartera** | Quién compra, cuánto, cada cuánto, y quién se enfrió |
+
+### Principios que quedan fijados en 1.0.0
+
+* **Las cifras cerradas no se recalculan.** Un mes cerrado conserva su tasa de cambio y sus montos, pase lo que pase después.
+* **Una sola fuente de verdad por concepto.** `lib/tallas.js` para el tamaño, `gastos` para el dinero que sale, `lib/fechas.js` para el formato de fechas.
+* **La seguridad vive en la base de datos, no en la interfaz.** Lo que un rol no puede hacer, lo impide una política de RLS.
+* **Lo que es una expectativa no cuenta como operación.** Las pre-alertas viven aparte de `paquetes` para no ensuciar SLA, panel ni reportes.
+
+### ✨ Cambios de esta versión
+
+* **Búsqueda por número de guía en Recepción** — llega una caja con la guía impresa y sin código de casillero: el bodeguero pega la guía y aparece el dueño. Los resultados por guía se muestran sobre los de cliente porque identifican un paquete concreto, no solo una persona. Al elegirlos se salta el modal: la guía ya resolvió cliente y paquete.
+
+### 🔧 Correcciones
+
+* **`Recepcion.jsx` usaba su propia copia de la sugerencia de talla**, ciega al peso. Una caja de 25 cm con 35 kg salía **S ($20)** al recibirla y **XL ($60)** en la calculadora de cotización: se cotizaba un precio y se cobraba otro. Ahora importa de `lib/tallas.js`, la misma fuente que el admin.
+* El campo de peso no disparaba el recálculo de talla porque no pasaba por `setMedida`. Sin esto, la corrección anterior habría quedado a medias.
+
+
+## [0.9.0] — 2026-08-06
+
+### ✨ Ciclo completo de pre-alertas
+
+La v0.8.0 dejó al cliente avisando y a la bodega enterándose por notificación, pero el aviso nunca se cerraba. Esta versión cierra el ciclo.
+
+* **Modal en Recepción** — al seleccionar el casillero, si ese cliente avisó algo, se abre un panel preguntando si el paquete que el bodeguero tiene en la mano es alguno de los avisados. Tomar uno rellena tienda, descripción y guía.
+* **La guía va primero y en grande** dentro de cada tarjeta del modal: es el único dato que se puede cotejar contra la etiqueta física de la caja. Con espaciado entre caracteres para comparar sin saltarse ninguno. Si el aviso no trae guía, se dice explícitamente para que el bodeguero sepa con qué otro criterio decidir.
+* **Enlace al guardar** — la pre-alerta pasa a `RECIBIDA` con su `paquete_id`. Corre después del registro y en su propio `try`: un fallo aquí nunca puede tumbar el guardado del paquete.
+* Banda verde visible durante todo el registro cuando hay un aviso enlazado, con opción de soltarlo sin perder lo ya escrito.
+* **"Ninguno, es un paquete nuevo"** es deliberadamente un botón secundario: con el mismo peso visual que las tarjetas se volvería el reflejo automático y la función dejaría de servir.
+
+### ✨ Paquetes avisados (Gerencia)
+
+* **Nueva pantalla `/gerencia/avisados`** con los avisos de todos los clientes.
+* Métricas: esperando, con más de 30 días sin llegar, recibidos y **tasa de llegada** — qué proporción de lo avisado termina en bodega.
+* Los avisos con más de 30 días muestran botones para **contactar al cliente por WhatsApp** (con un mensaje que ya menciona los días transcurridos y qué avisó) o **descartar**. Los recientes no muestran acciones: todavía pueden llegar solos.
+* **Estado `DESCARTADA`**, separado de `CANCELADA`. Si la bodega descartara con el mismo estado que usa el cliente, este vería "Cancelada" en su app y creería que él la canceló. Ahora ve "No llegó".
+
+### ✨ Casillero del cliente
+
+* **"Ver mis paquetes" sube** junto a la tarjeta de avisar, con un badge que cuenta todo lo que no está `ENTREGADO`. Juntas responden las dos preguntas con las que el cliente abre la app: qué viene y dónde está lo suyo.
+* **"Cómo comprar" pasa a un modal**, accesible desde una ilustración tocable en la tarjeta de dirección. La explicación queda en el momento de la duda —cuando el cliente mira una dirección ajena y no sabe qué hacer con ella— y la pantalla deja de ser larga.
+* La ilustración se sirve desde `public/` y no se importa desde `assets/`: si el archivo faltara, un import rompería el build, mientras que así solo falla la carga y entra un respaldo de texto.
+
+### 🗄️ Base de datos (SQL ejecutados)
+
+* `14_prealertas_descartada.sql` — estado `DESCARTADA` y política de RLS reescrita para dejar explícito que el cliente solo puede cancelar.
+
+
 ## [0.8.0] — 2026-08-06
 
 ### ✨ Pre-alertas (cliente avisa qué viene)

@@ -1,8 +1,8 @@
 # Los Líderes Encomiendas 📦
 > App multi-rol para gestión de encomiendas puerta a puerta, de Maicao (Colombia) a Maracaibo (Venezuela)
 
-![Status](https://img.shields.io/badge/status-producción-green)
-![Version](https://img.shields.io/badge/version-v0.8.0-blue)
+![Status](https://img.shields.io/badge/status-estable-brightgreen)
+![Version](https://img.shields.io/badge/version-v1.0.0-brightgreen)
 ![Stack](https://img.shields.io/badge/stack-React%20%7C%20Supabase%20%7C%20Railway-orange)
 
 ## URLs en producción
@@ -90,12 +90,22 @@ reportes de gerencia.
 | `RECIBIDA` | Llegó y se enlazó con un paquete real (`paquete_id`) |
 | `CANCELADA` | El cliente la retiró |
 
-El cliente solo puede cancelar; marcarla como recibida es potestad de la bodega
-y lo impide la política de RLS, no solo la interfaz.
+| `DESCARTADA` | Pasaron los días y nunca llegó; la bodega la cerró |
 
-> **Pendiente (fase 2)**: enlazar la pre-alerta al paquete desde `Recepcion.jsx`.
-> Hoy la bodega recibe el aviso por notificación pero `paquete_id` queda vacío.
-> Falta también decidir qué hacer con las pre-alertas que nunca llegan.
+El cliente solo puede cancelar; marcarla como recibida o descartada es potestad
+de la bodega y lo impide la política de RLS, no solo la interfaz. `CANCELADA` y
+`DESCARTADA` están separadas a propósito: si la bodega usara el mismo estado que
+el cliente, este vería "Cancelada" y creería que él la canceló.
+
+**Cierre del ciclo.** Al seleccionar el casillero en `Recepcion.jsx`, si el cliente
+tiene avisos pendientes se abre un modal preguntando si el paquete en mano es
+alguno de ellos. La guía se muestra primero y en grande porque es el único dato
+cotejable contra la etiqueta física. Al guardar, la pre-alerta pasa a `RECIBIDA`
+con su `paquete_id`; el enlace corre en su propio `try` para que un fallo nunca
+tumbe el registro del paquete.
+
+**Las que nunca llegan** aparecen en `/gerencia/avisados`. Pasados 30 días se
+marcan como atrasadas y ofrecen contactar al cliente por WhatsApp o descartar.
 
 ## Cartera de clientes (Gerencia)
 
@@ -195,6 +205,9 @@ Bodegueros cobran: comisión (tarifa × paquetes) + reembolso de fletes de cobro
 | Header unificado en las 4 pantallas del cliente | v0.8.0 |
 | Cartera de clientes en Gerencia | v0.8.0 |
 | Correo y último acceso en gestión de usuarios | v0.8.0 |
+| Enlace pre-alerta ↔ paquete desde Recepción | v0.9.0 |
+| Paquetes avisados en Gerencia | v0.9.0 |
+| Búsqueda por número de guía en Recepción | v1.0.0 |
 
 ## Setup local
 
@@ -211,7 +224,7 @@ npm run dev
 ```env
 VITE_SUPABASE_URL=https://kcmasyggaaclpkojohky.supabase.co
 VITE_SUPABASE_ANON_KEY=tu_anon_key
-VITE_APP_VERSION=0.8.0
+VITE_APP_VERSION=1.0.0
 VITE_APP_NAME=Los Líderes Encomiendas
 ```
 
@@ -242,6 +255,7 @@ Railway despliega automáticamente. El build number se genera con `gen-version.j
 11_cobro_destino.sql        Cobro a destino en bodega
 12_usuarios_email_login.sql Función usuarios_admin() con email y último acceso
 13_prealertas.sql           Pre-alertas del cliente + vista y RLS
+14_prealertas_descartada.sql Estado DESCARTADA para avisos que no llegaron
 ```
 
 ## Roadmap
@@ -264,15 +278,16 @@ Fuente única de verdad para la clasificación de paquetes. La talla definitiva 
 
 Descuento por volumen: **10 % desde 10 cajas** en un mismo envío. Las XL no entran en la base del descuento (precio a cotizar, no precio cerrado).
 
-`Recepcion.jsx` puede importar `sugerirTalla()` de aquí en lugar de mantener su propia copia.
+Tanto `Recepcion.jsx` (al registrar el paquete) como la calculadora de cotización
+del admin importan `sugerirTalla()` de aquí. Es deliberado: si divergieran, se
+cotizaría un precio y se cobraría otro.
 
 ## Pendientes conocidos
 
 - Dark mode Samsung Internet via WhatsApp (requiere PWA).
 - Campo `email` en detalle de usuario del admin (requiere join con `auth.users`).
 - Auditoría: los triggers de BD que registran cambios automáticamente están pendientes para G4.
-- Pre-alertas: falta enlazarlas al paquete desde Recepción (fase 2) y definir el vencimiento de las que nunca llegan.
-- `Recepcion.jsx` mantiene su propia copia de la sugerencia de talla; debería importar de `lib/tallas.js`.
+
 
 ## Autor
 
