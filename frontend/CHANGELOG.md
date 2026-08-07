@@ -1,6 +1,33 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [1.1.0] — 2026-08-06
+
+### ✨ Avisados visibles para administración
+
+* **Nuevo tab "Avisados"** en `/admin/paquetes`, junto a Todos. Lista solo los avisos pendientes: el admin ve qué está por llegar sin salir de su pantalla de trabajo.
+* Cada aviso es **una línea de resumen** —cliente, casillero, tienda, descripción, estado y número de guías— y el detalle completo se abre en un modal. Con ocho guías por aviso la tarjeta ocupaba media pantalla y volvía imposible escanear la lista, que es justo para lo que sirve.
+* Estado explícito **"Pendiente por llegar a bodega"**, en ámbar, o rojo pasados los 30 días.
+* Paginado de 15 en 15 con botón "Ver más". El buscador de la pantalla también filtra los avisos, incluido por número de guía.
+* Botón para escribirle al cliente por WhatsApp desde el modal.
+
+### ✨ Contacto directo desde la ficha de usuario
+
+* La fila del teléfono en el detalle de usuario ahora lleva un botón de WhatsApp justificado a la derecha. El número sigue sirviendo para llamar.
+
+### 🎨 Paquetes avisados (Gerencia) rediseñado
+
+* La tabla pasó a ancho fijo por columna: **ningún contenido puede desbordarla**, pegue el cliente lo que pegue. Antes una lista de ocho guías separadas por coma rompía la vista.
+* Las guías se normalizan y se cuentan; en la tabla se muestra "N guías" y en el modal van **una por línea, numeradas**, en monoespaciada con espaciado entre caracteres para cotejarlas contra las cajas.
+* Filas tocables que abren un modal con el detalle completo y las acciones de contactar o descartar, que antes competían por espacio en la tabla.
+* Columnas nuevas de **fecha de aviso** y **llegada**: la real para las recibidas, una estimación para las pendientes.
+* Se quitó el tab "Sin llegar": se confundía con "Pendientes". Los atrasados siguen distinguiéndose por color y por su métrica propia.
+
+> La estimación de llegada usa una constante de 15 días desde el aviso. Es un
+> supuesto, no un dato medido: hacen falta pre-alertas cerradas para calcular
+> una mediana real. Está en `DIAS_ESTIMADOS_LLEGADA`.
+
+
 ## [1.0.0] — 2026-08-06
 
 **Primera versión estable.** El negocio opera completo sobre el sistema: desde que

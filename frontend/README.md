@@ -2,7 +2,7 @@
 > App multi-rol para gestión de encomiendas puerta a puerta, de Maicao (Colombia) a Maracaibo (Venezuela)
 
 ![Status](https://img.shields.io/badge/status-estable-brightgreen)
-![Version](https://img.shields.io/badge/version-v1.0.0-brightgreen)
+![Version](https://img.shields.io/badge/version-v1.1.0-brightgreen)
 ![Stack](https://img.shields.io/badge/stack-React%20%7C%20Supabase%20%7C%20Railway-orange)
 
 ## URLs en producción
@@ -104,8 +104,16 @@ cotejable contra la etiqueta física. Al guardar, la pre-alerta pasa a `RECIBIDA
 con su `paquete_id`; el enlace corre en su propio `try` para que un fallo nunca
 tumbe el registro del paquete.
 
-**Las que nunca llegan** aparecen en `/gerencia/avisados`. Pasados 30 días se
-marcan como atrasadas y ofrecen contactar al cliente por WhatsApp o descartar.
+**Dónde se consultan.** Administración ve las pendientes en el tab *Avisados* de
+`/admin/paquetes`, en formato resumen con detalle en modal. Gerencia las ve todas
+en `/gerencia/avisados`, con métricas y tasa de llegada. Pasados 30 días se marcan
+como atrasadas y ofrecen contactar al cliente por WhatsApp o descartar.
+
+> Las guías se normalizan al mostrarlas: el cliente las pega separadas por coma,
+> espacio o salto de línea, y se listan una por línea para poder cotejarlas contra
+> las cajas. La fecha estimada de llegada usa una constante de 15 días
+> (`DIAS_ESTIMADOS_LLEGADA`) y debe recalcularse desde el historial cuando haya
+> suficientes pre-alertas cerradas.
 
 ## Cartera de clientes (Gerencia)
 
@@ -208,6 +216,8 @@ Bodegueros cobran: comisión (tarifa × paquetes) + reembolso de fletes de cobro
 | Enlace pre-alerta ↔ paquete desde Recepción | v0.9.0 |
 | Paquetes avisados en Gerencia | v0.9.0 |
 | Búsqueda por número de guía en Recepción | v1.0.0 |
+| Tab de Avisados en Paquetes del admin | v1.1.0 |
+| Botón de WhatsApp en la ficha de usuario | v1.1.0 |
 
 ## Setup local
 
@@ -224,7 +234,7 @@ npm run dev
 ```env
 VITE_SUPABASE_URL=https://kcmasyggaaclpkojohky.supabase.co
 VITE_SUPABASE_ANON_KEY=tu_anon_key
-VITE_APP_VERSION=1.0.0
+VITE_APP_VERSION=1.1.0
 VITE_APP_NAME=Los Líderes Encomiendas
 ```
 
