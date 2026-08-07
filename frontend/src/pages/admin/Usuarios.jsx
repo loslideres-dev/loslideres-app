@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import {
   Users, Plus, Search, Loader2, Check, Phone, MapPin, Mail, Calendar,
-  Clock, ShieldAlert, ChevronDown,
+  Clock, ShieldAlert, ChevronDown, MessageCircle,
 } from 'lucide-react'
 import { useUsuarios } from '../../hooks/usePerfiles'
 import { tiempoRelativo, fechaLarga, fechaHora } from '../../lib/fechas'
@@ -313,22 +313,41 @@ export default function Usuarios() {
                 </div>
               </div>
 
-              {/* Teléfono — visible para todos los roles si existe */}
+              {/* Teléfono — visible para todos los roles si existe.
+                  Son dos acciones distintas en una fila: el número llama, el
+                  botón de la derecha abre WhatsApp. Van separados y no
+                  anidados porque un <a> dentro de otro <a> es HTML inválido
+                  y el toque quedaría ambiguo. */}
               {detalle.telefono && (
-                <a href={`tel:${detalle.telefono}`}
-                  className="flex items-center gap-3 bg-white rounded-xl px-4 py-3
-                    active:scale-95 transition">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center
-                    flex-shrink-0" style={{ background: '#E6F4EC' }}>
-                    <Phone size={15} style={{ color: '#1B7A3E' }} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400">Teléfono</p>
-                    <p className="text-sm font-semibold" style={{ color: '#1B7A3E' }}>
-                      {detalle.telefono}
-                    </p>
-                  </div>
-                </a>
+                <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-3">
+                  <a href={`tel:${detalle.telefono}`}
+                    className="flex items-center gap-3 flex-1 min-w-0
+                      active:scale-95 transition">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center
+                      flex-shrink-0" style={{ background: '#E6F4EC' }}>
+                      <Phone size={15} style={{ color: '#1B7A3E' }} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-400">Teléfono</p>
+                      <p className="text-sm font-semibold truncate" style={{ color: '#1B7A3E' }}>
+                        {detalle.telefono}
+                      </p>
+                    </div>
+                  </a>
+
+                  <a
+                    href={`https://wa.me/${detalle.telefono.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Escribir por WhatsApp a ${detalle.nombre ?? 'el usuario'}`}
+                    title="Escribir por WhatsApp"
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2
+                      rounded-lg text-white text-xs font-semibold
+                      active:scale-95 transition"
+                    style={{ background: '#25D366' }}>
+                    <MessageCircle size={15} /> WhatsApp
+                  </a>
+                </div>
               )}
 
               {/* Dirección — clickeable a Google Maps */}
