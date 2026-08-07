@@ -52,6 +52,7 @@ const GerenciaReparto    = lazy(() => import('./pages/gerencia/Reparto'))
 const GerenciaCierres    = lazy(() => import('./pages/gerencia/Cierres'))
 const GerenciaPaquetes   = lazy(() => import('./pages/gerencia/PaquetesGer'))
 const GerenciaClientes   = lazy(() => import('./pages/gerencia/Clientes'))
+const GerenciaAvisados   = lazy(() => import('./pages/gerencia/PreAlertasGer'))
 const GerenciaUsuarios   = lazy(() => import('./pages/gerencia/UsuariosGer'))
 const GerenciaAjustes    = lazy(() => import('./pages/gerencia/Ajustes'))
 const GerenciaAuditoria  = lazy(() => import('./pages/gerencia/Auditoria'))
@@ -177,6 +178,9 @@ export default function App() {
         }/>
         <Route path="/gerencia/clientes" element={
           <PrivateRoute roles={['gerente']}><GerenciaClientes /></PrivateRoute>
+        }/>
+        <Route path="/gerencia/avisados" element={
+          <PrivateRoute roles={['gerente']}><GerenciaAvisados /></PrivateRoute>
         }/>
         <Route path="/gerencia/sla" element={
           <PrivateRoute roles={['gerente']}><GerenciaSLA /></PrivateRoute>

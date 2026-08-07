@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Copy, ChevronRight, AlertCircle, MessageCircle, PackagePlus } from 'lucide-react'
+import {
+  Copy, ChevronRight, AlertCircle, MessageCircle, PackagePlus, HelpCircle, X,
+} from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useMiPerfil } from '../../hooks/usePerfiles'
 import { useMisPrealertas } from '../../hooks/usePrealertas'
+import { usePaquetes } from '../../hooks/usePaquetes'
 import ClienteLayout from '../../components/layout/ClienteLayout'
 import ClienteHeader from '../../components/layout/ClienteHeader'
 import Toast from '../../components/ui/Toast'
@@ -29,11 +32,19 @@ export default function Casillero() {
   const { user } = useAuthStore()
   const [toast, setToast] = useState(false)
   const [showTour, setShowTour] = useState(params.get('tour') === '1')
+  const [comoComprar, setComoComprar] = useState(false)
+  const [sinImagen,   setSinImagen]   = useState(false)
 
   const { data: perfil } = useMiPerfil(user?.id)
   const { data: prealertas = [] } = useMisPrealertas(user?.id)
 
   const pendientes = prealertas.filter(p => p.estado === 'PENDIENTE').length
+
+  // Activos = todo lo que todavía se mueve. El cliente no distingue entre
+  // RECIBIDO, TARIFADO, EN_TRANSITO y EN_REPARTO: para él son "los que
+  // están en camino". Lo único cerrado es ENTREGADO.
+  const { data: paquetes = [] } = usePaquetes()
+  const activos = paquetes.filter(p => p.estado !== 'ENTREGADO').length
 
   const nombre = perfil?.nombre ?? user?.user_metadata?.nombre
     ?? user?.email?.split('@')[0] ?? 'Cliente'
@@ -105,7 +116,47 @@ export default function Casillero() {
         <div className="mx-5 mt-4 rounded-2xl overflow-hidden"
           style={{ background: '#F0FAF4', border: '1.5px solid #6ECC97' }}>
           <div className="px-5 pt-5 pb-3">
-            <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">DIRECCIÓN DE ENVÍO</p>
+            {/* La imagen va flotada, no dentro de un flex: en un flex ocupaba
+                una fila propia y empujaba toda la dirección hacia abajo.
+                Flotada, el texto la rodea y la tarjeta no crece. */}
+              {/* La explicación vive aquí y no más abajo porque este es el
+                  momento de la duda: el cliente está mirando una dirección
+                  ajena y se pregunta qué hace con ella.
+
+                  La imagen se sirve desde public/ y no se importa desde
+                  assets/ a propósito: si el archivo todavía no está, un import
+                  rompería el build, mientras que así solo falla la carga y
+                  entra el respaldo de texto. */}
+              <button onClick={() => setComoComprar(true)}
+                aria-label="Ver cómo usar esta dirección"
+                className="float-right ml-3 flex flex-col items-center gap-1
+                  active:scale-95 transition">
+                {sinImagen ? (
+                  <span className="flex items-center gap-1 text-xs font-semibold
+                    px-2.5 py-1 rounded-full"
+                    style={{ background: '#DCF2E5', color: '#14532D' }}>
+                    <HelpCircle size={13} /> ¿Cómo la uso?
+                  </span>
+                ) : (
+                  <>
+                    <img
+                      src="/como-usar.png"
+                      alt=""
+                      onError={() => setSinImagen(true)}
+                      className="w-[72px] h-[72px] object-contain rounded-xl"
+                      style={{ background: '#DCF2E5' }}
+                    />
+                    <span className="text-[10px] font-bold leading-none"
+                      style={{ color: '#14532D' }}>
+                      ¿Cómo la uso?
+                    </span>
+                  </>
+                )}
+              </button>
+
+              <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">
+                DIRECCIÓN DE ENVÍO
+              </p>
             <div className="space-y-1">
               {[
                 `${nombre} · ${codigo}`,
@@ -116,6 +167,7 @@ export default function Casillero() {
                 </p>
               ))}
             </div>
+            <div className="clear-both" />
           </div>
           <button onClick={handleCopy}
             className="w-full flex items-center justify-center gap-2 py-4
@@ -156,47 +208,31 @@ export default function Casillero() {
           </button>
         </div>
 
-        {/* Instrucciones */}
-        <div className="mx-5 mt-4 bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs font-semibold text-slate-400 tracking-wider mb-4">CÓMO COMPRAR</p>
-          {[
-            { n:'1', title:'Copia la dirección', desc:'Pégala tal cual en la tienda (Amazon, Shein, Temu) al momento de pagar.' },
-            { n:'2', title:`Deja tu código`, desc:`Sin el ${codigo} no sabemos de quién es el paquete cuando llega.` },
-            { n:'3', title:'Avísanos qué viene', desc:'Desde la pestaña Avisar cuéntanos qué compraste. Así lo reconocemos apenas llegue, aunque la caja venga sin tu código.', accion:'/cliente/avisar' },
-            { n:'4', title:'Te avisamos', desc:'Cuando llegue a la bodega recibirás una notificación con la foto y el precio.' },
-          ].map(({ n, title, desc, accion }) => (
-            <div key={n} className="flex gap-4 mb-4 last:mb-0">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center
-                flex-shrink-0 text-white text-xs font-bold mt-0.5"
-                style={{ background: '#1565C0' }}>{n}</div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800 mb-0.5">{title}</p>
-                <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-                {/* El paso que pide una acción la ofrece ahí mismo: leer
-                    "ve a la pestaña Avisar" y tener que buscarla es fricción. */}
-                {accion && (
-                  <button onClick={() => navigate(accion)}
-                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold
-                      active:scale-95 transition"
-                    style={{ color: '#1565C0' }}>
-                    Avisar un paquete <ChevronRight size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Acceso rápido */}
-        <div className="mx-5 mt-4">
+        {/* Mis paquetes — sube aquí, pegado a Avisar: juntos responden las dos
+            preguntas con las que el cliente abre la app, "¿qué viene?" y
+            "¿dónde está lo mío?". */}
+        <div className="mx-5 mt-3">
           <button onClick={() => navigate('/cliente/paquetes')}
             className="w-full bg-white rounded-2xl shadow-sm px-5 py-4
-              flex items-center justify-between active:scale-95 transition">
-            <div>
+              flex items-center justify-between gap-3 active:scale-95 transition">
+            <div className="min-w-0 text-left">
               <p className="text-sm font-semibold text-slate-800">Ver mis paquetes</p>
-              <p className="text-xs text-slate-400 mt-0.5">Estado y seguimiento</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {activos > 0
+                  ? `${activos} ${activos === 1 ? 'activo' : 'activos'} · toca para seguirlos`
+                  : 'Estado y seguimiento'}
+              </p>
             </div>
-            <ChevronRight size={20} className="text-slate-300" />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {activos > 0 && (
+                <span className="min-w-[26px] h-[26px] px-2 rounded-full flex items-center
+                  justify-center text-white text-xs font-bold font-mono"
+                  style={{ background: '#1565C0' }}>
+                  {activos}
+                </span>
+              )}
+              <ChevronRight size={20} className="text-slate-300" />
+            </div>
           </button>
         </div>
 
@@ -216,6 +252,66 @@ export default function Casillero() {
         </div>
 
       </div>
+
+      {/* ════════ CÓMO COMPRAR ════════ */}
+      {comoComprar && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: 'rgba(13,43,94,0.6)' }}
+          onClick={() => setComoComprar(false)}>
+          <div className="w-full max-w-lg bg-white rounded-t-3xl px-6 pt-5 pb-8
+            max-h-[85vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}>
+
+            <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
+
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div>
+                <h2 className="text-lg font-bold text-slate-800">Cómo comprar</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Cuatro pasos y tu compra llega a Maracaibo
+                </p>
+              </div>
+              <button onClick={() => setComoComprar(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center
+                  justify-center text-slate-500 flex-shrink-0 active:scale-95">
+                <X size={16} />
+              </button>
+            </div>
+
+            {[
+              { n:'1', title:'Copia la dirección', desc:'Pégala tal cual en la tienda (Amazon, Shein, Temu) al momento de pagar.' },
+              { n:'2', title:'Deja tu código', desc:`Sin el ${codigo} no sabemos de quién es el paquete cuando llega.` },
+              { n:'3', title:'Avísanos qué viene', desc:'Desde la pestaña Avisar cuéntanos qué compraste. Así lo reconocemos apenas llegue, aunque la caja venga sin tu código.', accion:'/cliente/avisar' },
+              { n:'4', title:'Te avisamos', desc:'Cuando llegue a la bodega recibirás una notificación con la foto y el precio.' },
+            ].map(({ n, title, desc, accion }) => (
+              <div key={n} className="flex gap-4 mb-5 last:mb-2">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center
+                  flex-shrink-0 text-white text-xs font-bold mt-0.5"
+                  style={{ background: '#1565C0' }}>{n}</div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 mb-0.5">{title}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+                  {accion && (
+                    <button onClick={() => { setComoComprar(false); navigate(accion) }}
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-semibold
+                        active:scale-95 transition"
+                      style={{ color: '#1565C0' }}>
+                      Avisar un paquete <ChevronRight size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            <button onClick={() => setComoComprar(false)}
+              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm
+                active:scale-95 transition mt-2"
+              style={{ background: '#1565C0' }}>
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </ClienteLayout>
   )
 }
