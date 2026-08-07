@@ -2,7 +2,7 @@
 > App multi-rol para gestión de encomiendas puerta a puerta, de Maicao (Colombia) a Maracaibo (Venezuela)
 
 ![Status](https://img.shields.io/badge/status-estable-brightgreen)
-![Version](https://img.shields.io/badge/version-v1.1.0-brightgreen)
+![Version](https://img.shields.io/badge/version-v1.2.0-brightgreen)
 ![Stack](https://img.shields.io/badge/stack-React%20%7C%20Supabase%20%7C%20Railway-orange)
 
 ## URLs en producción
@@ -72,6 +72,28 @@ Cuando un paquete llega con flete por cobrar (Servientrega cobro a destino):
 2. El admin ve el aviso al tarifar y ajusta el precio si corresponde.
 3. El monto se suma como devolución en la liquidación del bodeguero, separado de su comisión.
 4. El cliente ve una tarjeta ámbar en el detalle de su paquete explicando el cargo.
+
+## Teléfonos
+
+Se guardan siempre en formato internacional **E.164**: `+58XXXXXXXXXX`. No es
+cosmético — los botones de WhatsApp arman el enlace con los dígitos crudos, así
+que un número mal formado abre un chat vacío y falla sin avisar.
+
+Tres capas sostienen el formato:
+
+| Capa | Qué hace |
+|---|---|
+| `components/ui/TelefonoInput` | Selector de país + número local. El usuario nunca escribe el prefijo |
+| `lib/telefono.js` | `PAISES` y `separarTelefono()`, compartidos |
+| Trigger `trg_perfiles_telefono` | Normaliza en la base, entre el dato por donde entre |
+
+`normalizar_telefono()` corrige lo que reconoce con certeza y **devuelve intacto
+lo que no**: adivinar el código de país de un número desconocido puede terminar
+en un mensaje a la persona equivocada. Los clientes en el exterior (EE.UU.,
+Chile, Perú) conservan su número tal cual.
+
+No hay `CHECK constraint` a propósito: bloquearía el registro de alguien con un
+número de un país cuyas reglas no están programadas.
 
 ## Pre-alertas
 
@@ -218,6 +240,8 @@ Bodegueros cobran: comisión (tarifa × paquetes) + reembolso de fletes de cobro
 | Búsqueda por número de guía en Recepción | v1.0.0 |
 | Tab de Avisados en Paquetes del admin | v1.1.0 |
 | Botón de WhatsApp en la ficha de usuario | v1.1.0 |
+| Teléfonos normalizados con selector de país | v1.2.0 |
+| Contraste y legibilidad en móvil | v1.2.0 |
 
 ## Setup local
 
@@ -234,7 +258,7 @@ npm run dev
 ```env
 VITE_SUPABASE_URL=https://kcmasyggaaclpkojohky.supabase.co
 VITE_SUPABASE_ANON_KEY=tu_anon_key
-VITE_APP_VERSION=1.1.0
+VITE_APP_VERSION=1.2.0
 VITE_APP_NAME=Los Líderes Encomiendas
 ```
 
@@ -266,6 +290,7 @@ Railway despliega automáticamente. El build number se genera con `gen-version.j
 12_usuarios_email_login.sql Función usuarios_admin() con email y último acceso
 13_prealertas.sql           Pre-alertas del cliente + vista y RLS
 14_prealertas_descartada.sql Estado DESCARTADA para avisos que no llegaron
+15_normalizar_telefonos.sql Teléfonos a E.164 + trigger de normalización
 ```
 
 ## Roadmap

@@ -1,6 +1,31 @@
 # Los Líderes Encomiendas · Changelog
 
 
+## [1.2.0] — 2026-08-06
+
+### ✨ Teléfonos normalizados
+
+Los teléfonos venían guardados en cinco formatos distintos: `04149600944`, `+5804126467959`, `584146124240`, `4146728600` y el correcto. Los botones de WhatsApp arman el enlace con los dígitos crudos, así que **seis clientes abrían un chat vacío** — fallaba en silencio y nadie se enteraba de que el mensaje nunca salía.
+
+* **Selector de país** en el registro y en el perfil del cliente. El prefijo queda fijo a la izquierda y el usuario solo escribe su número local; la ambigüedad desaparece de raíz en vez de adivinar el país después. Ocho países disponibles, Venezuela por defecto.
+* Debajo del campo se muestra en gris cómo va a quedar guardado, y avisa —sin bloquear— si el largo no cuadra con el país o si un móvil venezolano no empieza por 412, 414, 416, 424 o 426.
+* Todo se guarda en formato internacional **E.164** (`+58XXXXXXXXXX`).
+* **Función `normalizar_telefono()` y backfill**: corrigió 7 registros y dejó intactos los 3 de clientes en el exterior (EE.UU., Chile, Perú), que tienen formato válido de su país.
+* **Trigger en `perfiles`**: la validación del formulario guía, pero el trigger garantiza el formato aunque el dato entre por el panel de Supabase o por un script.
+* No se agregó `CHECK constraint` a propósito: perder un cliente con un número de un país cuyas reglas no están programadas pesa más que un formato inconsistente.
+
+### 🎨 Legibilidad en móvil
+
+* El texto gris de la app usaba `slate-400`, que da **2.56 de contraste sobre blanco** cuando el mínimo accesible es 4.5. Corregido en todo el módulo del cliente y en la calculadora, subiendo a `slate-500` y `slate-600` según el caso.
+* Los textos que van sobre el azul marino se **aclararon** en lugar de oscurecerse: un reemplazo uniforme los habría vuelto ilegibles.
+* Los micro-textos de 10px subieron a 11 y 12. Los campos de entrada pasaron a 16px, con lo que Safari en iOS deja de hacer zoom automático al enfocarlos.
+* **Login sin scroll**: el bloque medía ~894px y en pantallas de ~780px útiles (Samsung A55) el enlace de "Regístrate" quedaba fuera de vista. Ahora mide 774px. El espacio salió de los márgenes, del relleno de la tarjeta y del pie — el logotipo conserva su tamaño.
+
+### 🗄️ Base de datos (SQL ejecutados)
+
+* `15_normalizar_telefonos.sql` — función de normalización, backfill y trigger.
+
+
 ## [1.1.0] — 2026-08-06
 
 ### ✨ Avisados visibles para administración
