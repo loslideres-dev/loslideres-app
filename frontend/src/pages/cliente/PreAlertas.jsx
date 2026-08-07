@@ -70,7 +70,7 @@ export default function PreAlertas() {
         titulo="Avisar un envío"
         acciones={
           <button onClick={() => setAyuda(a => !a)} aria-label="Cómo funciona"
-            className="text-slate-400 hover:text-white transition p-1 active:scale-95">
+            className="text-slate-300 hover:text-white transition p-1 active:scale-95">
             <HelpCircle size={18} />
           </button>
         }
@@ -111,11 +111,11 @@ export default function PreAlertas() {
         {abierto ? (
           <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold text-slate-400 tracking-wider">
+              <p className="text-xs font-semibold text-slate-500 tracking-wider">
                 NUEVO AVISO
               </p>
               <button onClick={() => { setAbierto(false); setForm(FORM_VACIO) }}
-                className="text-slate-300 active:scale-90">
+                className="text-slate-400 active:scale-90">
                 <X size={16} />
               </button>
             </div>
@@ -141,16 +141,16 @@ export default function PreAlertas() {
             <input type="text" value={form.descripcion}
               onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
               placeholder="Ej: dos pares de zapatos"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 text-base
                 outline-none focus:ring-2 focus:ring-blue-500 mb-4" />
 
             <p className="text-xs text-slate-500 mb-1.5">
-              Número de guía <span className="text-slate-300">(opcional)</span>
+              Número de guía <span className="text-slate-500">(opcional)</span>
             </p>
             <input type="text" value={form.tracking}
               onChange={e => setForm(f => ({ ...f, tracking: e.target.value }))}
               placeholder="El que te dio la tienda"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 text-base
                 font-mono outline-none focus:ring-2 focus:ring-blue-500 mb-4" />
 
             <button onClick={guardar} disabled={!puedeGuardar}
@@ -183,7 +183,7 @@ export default function PreAlertas() {
           <>
             {pendientes.length > 0 && (
               <>
-                <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">
+                <p className="text-xs font-semibold text-slate-500 tracking-wider mb-3">
                   EN CAMINO ({pendientes.length})
                 </p>
                 <div className="space-y-2 mb-5">
@@ -198,7 +198,7 @@ export default function PreAlertas() {
 
             {historial.length > 0 && (
               <>
-                <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">
+                <p className="text-xs font-semibold text-slate-500 tracking-wider mb-3">
                   ANTERIORES
                 </p>
                 <div className="space-y-2">
@@ -213,7 +213,7 @@ export default function PreAlertas() {
                 <p className="text-sm font-semibold text-slate-600 mb-1">
                   Todavía no has avisado nada
                 </p>
-                <p className="text-xs text-slate-400 leading-relaxed px-6">
+                <p className="text-sm text-slate-600 leading-relaxed px-6">
                   Cuando compres en una tienda y la envíes a nuestra bodega,
                   avísanos aquí para estar pendientes.
                 </p>
@@ -246,7 +246,7 @@ function Tarjeta({ p, onCancelar, cancelando }) {
             {p.descripcion}
           </p>
           {p.tracking && (
-            <p className="text-xs text-slate-400 font-mono mt-0.5 break-all">
+            <p className="text-xs text-slate-500 font-mono mt-0.5 break-all">
               {p.tracking}
             </p>
           )}
@@ -254,14 +254,14 @@ function Tarjeta({ p, onCancelar, cancelando }) {
         {onCancelar && (
           <button onClick={onCancelar} disabled={cancelando}
             aria-label="Cancelar aviso"
-            className="text-slate-300 active:scale-90 flex-shrink-0 p-1
+            className="text-slate-400 active:scale-90 flex-shrink-0 p-1
               disabled:opacity-40">
             <X size={16} />
           </button>
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+      <div className="flex items-center gap-1.5 text-xs text-slate-500">
         <Truck size={12} />
         <span>
           Avisado {tiempoRelativo(p.created_at) ?? `el ${fechaCorta(p.created_at)}`}

@@ -302,14 +302,14 @@ export default function Calculadora() {
         {/* ── Para quién (opcional) ── */}
         <input value={para} onChange={e => setPara(e.target.value)}
           placeholder="¿Para quién es? (opcional)"
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white
+          className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white
             text-sm outline-none focus:ring-2 focus:ring-blue-500 mb-4" />
 
         {/* ── Líneas ── */}
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-slate-400 tracking-wider">PAQUETES</p>
+          <p className="text-xs font-semibold text-slate-500 tracking-wider">PAQUETES</p>
           <button onClick={limpiar}
-            className="text-xs text-slate-400 flex items-center gap-1 active:scale-95">
+            className="text-xs text-slate-600 flex items-center gap-1 active:scale-95">
             <RotateCcw size={12} /> Limpiar
           </button>
         </div>
@@ -329,7 +329,7 @@ export default function Calculadora() {
                         style={{ background: COLOR_TALLA[l.talla] + '18', color: COLOR_TALLA[l.talla] }}>
                         Talla {l.talla}
                       </span>
-                    : <span className="text-[11px] text-slate-300">Sin datos</span>}
+                    : <span className="text-xs text-slate-500">Sin datos</span>}
                 </div>
                 {lineas.length > 1 && (
                   <button onClick={() => eliminar(l.id)} className="p-1 active:scale-90">
@@ -347,13 +347,13 @@ export default function Calculadora() {
                   { campo: 'peso',  label: 'Peso kg'  },
                 ].map(({ campo, label }) => (
                   <div key={campo}>
-                    <p className="text-[10px] text-slate-400 mb-1 text-center">{label}</p>
+                    <p className="text-xs text-slate-600 mb-1.5 text-center font-medium">{label}</p>
                     <input type="number" inputMode="decimal" min="0"
                       value={l[campo]}
                       onChange={e => editar(l.id, campo, e.target.value)}
                       placeholder="—"
-                      className="w-full px-1 py-2.5 rounded-xl border border-slate-200
-                        text-sm font-mono text-center outline-none
+                      className="w-full px-1 py-2.5 rounded-xl border border-slate-300
+                        text-base font-mono text-center text-slate-800 outline-none
                         focus:ring-2 focus:ring-blue-500" />
                   </div>
                 ))}
@@ -361,7 +361,7 @@ export default function Calculadora() {
 
               {/* Talla manual */}
               <div className="flex items-center gap-1.5 mb-3">
-                <span className="text-[10px] text-slate-400 mr-1">Talla</span>
+                <span className="text-xs text-slate-500 mr-1">Talla</span>
                 {ORDEN_TALLAS.map(t => {
                   const activa = l.talla === t
                   return (
@@ -370,14 +370,14 @@ export default function Calculadora() {
                         active:scale-95 transition"
                       style={activa
                         ? { background: COLOR_TALLA[t], color: '#fff' }
-                        : { background: '#F1F5F9', color: '#94A3B8' }}>
+                        : { background: '#F1F5F9', color: '#475569' }}>
                       {t}
                     </button>
                   )
                 })}
                 {l.tallaManual && (
                   <button onClick={() => fijarTalla(l.id, null)}
-                    className="text-[10px] text-blue-600 font-medium px-1 active:scale-95">
+                    className="text-[11px] text-blue-600 font-medium px-1 active:scale-95">
                     auto
                   </button>
                 )}
@@ -407,16 +407,16 @@ export default function Calculadora() {
                     <>
                       <p className="text-base font-mono font-bold text-slate-800">
                         {l.aCotizar && (
-                          <span className="text-[11px] font-normal text-slate-400">desde </span>
+                          <span className="text-xs font-normal text-slate-500">desde </span>
                         )}
                         ${fmt(l.subtotal)}
                       </p>
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-xs text-slate-500">
                         {l.cantidad} × ${fmt(l.precio)}
                       </p>
                     </>
                   ) : (
-                    <p className="text-[11px] text-slate-300">Pon medidas o peso</p>
+                    <p className="text-xs text-slate-500">Pon medidas o peso</p>
                   )}
                 </div>
               </div>
@@ -431,8 +431,8 @@ export default function Calculadora() {
         </div>
 
         <button onClick={agregar}
-          className="w-full py-3.5 rounded-2xl border-2 border-dashed border-slate-200
-            text-sm font-medium text-slate-400 flex items-center justify-center gap-2
+          className="w-full py-3.5 rounded-2xl border-2 border-dashed border-slate-300
+            text-sm font-semibold text-slate-600 flex items-center justify-center gap-2
             active:scale-95 transition mb-4">
           <Plus size={16} /> Agregar paquete
         </button>
@@ -467,7 +467,7 @@ export default function Calculadora() {
             </div>
           </button>
         ) : bultos > 0 && (
-          <p className="text-[11px] text-center text-slate-400 mb-4">
+          <p className="text-xs text-center text-slate-500 mb-4">
             {faltanCajas === 1
               ? 'Falta 1 caja para el descuento por volumen.'
               : `Faltan ${faltanCajas} cajas para el descuento por volumen.`}
@@ -496,7 +496,7 @@ export default function Calculadora() {
 
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold tracking-wider mb-1"
+              <p className="text-[11px] font-semibold tracking-wider mb-1"
                 style={{ color: '#4FC3F7' }}>
                 TOTAL ESTIMADO
               </p>
@@ -507,7 +507,7 @@ export default function Calculadora() {
                 ${fmt(total)}
               </p>
             </div>
-            <p className="text-[11px] text-right flex-shrink-0" style={{ color: '#8FB0DA' }}>
+            <p className="text-xs text-right flex-shrink-0" style={{ color: '#8FB0DA' }}>
               {bultos} {bultos === 1 ? 'caja' : 'cajas'}
               <br />
               {bultos > 0 ? `$${(total / bultos).toFixed(2)} c/u` : 'USD'}
@@ -535,7 +535,7 @@ export default function Calculadora() {
               <MessageCircle size={18} /> WhatsApp
             </button>
             <button onClick={copiar}
-              className="w-full mt-2 py-2 text-xs text-slate-400 flex items-center
+              className="w-full mt-2 py-2 text-sm text-slate-600 flex items-center
                 justify-center gap-1.5 active:scale-95">
               {copiado
                 ? <><Check size={13} style={{ color: '#1B7A3E' }} /> Copiado</>
@@ -545,7 +545,7 @@ export default function Calculadora() {
         ) : (
           <div className="text-center py-6">
             <Package size={28} className="text-slate-200 mx-auto mb-2" />
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-600">
               Escribe las medidas o el peso para armar la cotización.
             </p>
           </div>

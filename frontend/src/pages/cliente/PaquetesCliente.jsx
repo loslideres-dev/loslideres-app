@@ -52,7 +52,7 @@ function PaqueteCard({ paquete, onClick }) {
                 ? <p className="text-xs font-mono font-semibold text-slate-700 truncate">
                     {paquete.tracking_externo}
                   </p>
-                : <p className="text-xs text-slate-400 font-mono">{paquete.codigo}</p>
+                : <p className="text-xs text-slate-500 font-mono">{paquete.codigo}</p>
               }
               <p className="text-sm font-semibold text-slate-800 truncate">
                 {[paquete.descripcion, paquete.tienda].filter(Boolean).join(' · ')}
@@ -61,7 +61,7 @@ function PaqueteCard({ paquete, onClick }) {
             <ChevronRight size={16} className="text-slate-300 flex-shrink-0 mt-1" />
           </div>
 
-          <p className="text-xs text-slate-400 mb-2">
+          <p className="text-xs text-slate-600 mb-2">
             {[paquete.largo_cm, paquete.ancho_cm, paquete.alto_cm]
               .filter(Boolean).join(' × ')}{paquete.largo_cm ? ' cm' : ''}
             {paquete.peso_kg ? ` · ${paquete.peso_kg} kg` : ''}
@@ -75,11 +75,11 @@ function PaqueteCard({ paquete, onClick }) {
           {paquete.precio_final
             ? <span className="text-sm font-bold" style={{ color: '#1565C0' }}>
                 ${paquete.precio_final}{' '}
-                <span className="text-xs font-normal text-slate-400">USD</span>
+                <span className="text-xs font-normal text-slate-500">USD</span>
               </span>
-            : <span className="text-xs text-slate-400 italic">Precio pendiente</span>
+            : <span className="text-xs text-slate-500 italic">Precio pendiente</span>
           }
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500">
             {entregado
               ? `Entregado ${formatFecha(paquete.fecha_entrega)}`
               : paquete.fecha_estimada
@@ -90,7 +90,7 @@ function PaqueteCard({ paquete, onClick }) {
         </div>
 
         {entregado && paquete.nombre_receptor && (
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             Recibido por{' '}
             <span className="font-medium text-slate-600">{paquete.nombre_receptor}</span>
           </p>
@@ -129,7 +129,7 @@ export default function PaquetesCliente() {
         titulo="Mis paquetes"
         acciones={
           <button onClick={() => refetch()} aria-label="Actualizar"
-            className="text-slate-400 hover:text-white transition p-1 active:scale-95">
+            className="text-slate-300 hover:text-white transition p-1 active:scale-95">
             <RefreshCw size={18} />
           </button>
         }
@@ -196,7 +196,7 @@ export default function PaquetesCliente() {
             <p className="text-slate-500 text-sm font-medium">
               {filtro ? 'No hay paquetes con ese estado' : 'No tienes paquetes aún'}
             </p>
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="text-slate-600 text-sm mt-1">
               Usa tu código {codigo} al comprar
             </p>
           </div>

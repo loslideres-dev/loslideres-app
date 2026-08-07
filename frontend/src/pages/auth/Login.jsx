@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
-import { ROLE_REDIRECT } from '../../constants/roles'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import logoFull from '../../assets/logo-full.png'
 import { useVersion } from '../../hooks/useVersion'
@@ -110,8 +109,8 @@ function LoginForm({ onSwitch }) {
 
   return (
     <>
-      <h2 className="text-slate-800 text-lg font-semibold mb-1">Bienvenido</h2>
-      <p className="text-slate-500 text-sm mb-5">Entra con tu cuenta</p>
+      <h2 className="text-slate-800 text-lg font-semibold mb-0.5">Bienvenido</h2>
+      <p className="text-slate-500 text-sm mb-3.5">Entra con tu cuenta</p>
 
       {error && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm text-red-700
@@ -120,12 +119,12 @@ function LoginForm({ onSwitch }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-3">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Correo</label>
           <input type="email" autoComplete="email" placeholder="tucorreo@gmail.com"
             {...register('email')}
-            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
+            className={`w-full px-4 py-3 rounded-xl border text-base outline-none transition
               focus:ring-2 focus:ring-blue-500
               ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
           {errors.email &&
@@ -137,7 +136,7 @@ function LoginForm({ onSwitch }) {
           <div className="relative">
             <input type={showPass ? 'text' : 'password'} autoComplete="current-password"
               placeholder="••••••••" {...register('password')}
-              className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition
+              className={`w-full px-4 py-3 pr-11 rounded-xl border text-base outline-none transition
                 focus:ring-2 focus:ring-blue-500
                 ${errors.password ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
             <button type="button" onClick={() => setShowPass(v => !v)}
@@ -167,7 +166,7 @@ function LoginForm({ onSwitch }) {
         </button>
       </form>
 
-      <div className="flex items-center gap-3 my-5">
+      <div className="flex items-center gap-3 my-3.5">
         <div className="flex-1 h-px bg-slate-200" />
         <span className="text-xs text-slate-400">o</span>
         <div className="flex-1 h-px bg-slate-200" />
@@ -175,7 +174,7 @@ function LoginForm({ onSwitch }) {
 
       <GoogleButton loading={googleLoad} onClick={handleGoogle} />
 
-      <p className="text-center text-sm text-slate-500 mt-5">
+      <p className="text-center text-sm text-slate-500 mt-3.5">
         ¿No tienes cuenta?{' '}
         <button onClick={onSwitch}
           className="text-blue-600 font-semibold hover:text-blue-800">
@@ -249,8 +248,8 @@ function RegisterForm({ onSwitch }) {
 
   return (
     <>
-      <h2 className="text-slate-800 text-lg font-semibold mb-1">Crear cuenta</h2>
-      <p className="text-slate-500 text-sm mb-5">
+      <h2 className="text-slate-800 text-lg font-semibold mb-0.5">Crear cuenta</h2>
+      <p className="text-slate-500 text-sm mb-4">
         Regístrate para recibir tus paquetes en Maracaibo
       </p>
 
@@ -263,7 +262,7 @@ function RegisterForm({ onSwitch }) {
 
       <GoogleButton loading={googleLoad} onClick={handleGoogle} />
 
-      <div className="flex items-center gap-3 my-5">
+      <div className="flex items-center gap-3 my-3.5">
         <div className="flex-1 h-px bg-slate-200" />
         <span className="text-xs text-slate-400">o regístrate con correo</span>
         <div className="flex-1 h-px bg-slate-200" />
@@ -276,7 +275,7 @@ function RegisterForm({ onSwitch }) {
           </label>
           <input type="text" autoComplete="name" placeholder="María Fernanda García"
             {...register('nombre')}
-            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
+            className={`w-full px-4 py-3 rounded-xl border text-base outline-none transition
               focus:ring-2 focus:ring-blue-500
               ${errors.nombre ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
           {errors.nombre &&
@@ -289,7 +288,7 @@ function RegisterForm({ onSwitch }) {
           </label>
           <input type="email" autoComplete="email" placeholder="tucorreo@gmail.com"
             {...register('email')}
-            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
+            className={`w-full px-4 py-3 rounded-xl border text-base outline-none transition
               focus:ring-2 focus:ring-blue-500
               ${errors.email ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
           {errors.email &&
@@ -301,7 +300,7 @@ function RegisterForm({ onSwitch }) {
           <div className="relative">
             <input type={showPass ? 'text' : 'password'} autoComplete="new-password"
               placeholder="Mínimo 6 caracteres" {...register('password')}
-              className={`w-full px-4 py-3 pr-11 rounded-xl border text-sm outline-none transition
+              className={`w-full px-4 py-3 pr-11 rounded-xl border text-base outline-none transition
                 focus:ring-2 focus:ring-blue-500
                 ${errors.password ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
             <button type="button" onClick={() => setShowPass(v => !v)}
@@ -323,7 +322,7 @@ function RegisterForm({ onSwitch }) {
         </button>
       </form>
 
-      <p className="text-center text-sm text-slate-500 mt-5">
+      <p className="text-center text-sm text-slate-500 mt-3.5">
         ¿Ya tienes cuenta?{' '}
         <button onClick={onSwitch}
           className="text-blue-600 font-semibold hover:text-blue-800">
@@ -342,27 +341,31 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#F4F6FA' }}>
 
-      {/* Header con logo completo */}
-      <div className="flex flex-col items-center justify-center pt-14 pb-10 px-6"
+      {/* Header con logo completo.
+          El logo se mantiene a w-56: es la marca y no es lo que se recorta.
+          El espacio para que el formulario entre sin scroll en pantallas de
+          ~780px útiles (Samsung A55) sale de los márgenes, del relleno de la
+          tarjeta blanca y del pie, no del logotipo. */}
+      <div className="flex flex-col items-center justify-center pt-6 pb-7 px-6"
         style={{ background: '#0D2B5E' }}>
-        <div className="bg-white rounded-3xl px-6 py-5 shadow-lg">
+        <div className="bg-white rounded-2xl px-5 py-3 shadow-lg">
           <img src={logoFull} alt="Los Líderes Encomiendas"
             className="w-56 h-auto" />
         </div>
-        <p className="text-slate-400 text-xs mt-5 text-center">
+        <p className="text-slate-300 text-xs mt-3 text-center">
           Recibe tus paquetes en Maracaibo con seguridad y rapidez.
         </p>
       </div>
 
       {/* Card */}
-      <div className="flex-1 flex flex-col items-center px-5 -mt-5">
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-6 pt-7">
+      <div className="flex-1 flex flex-col items-center px-5 -mt-4">
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-5 pt-6">
           {mode === 'login'
             ? <LoginForm    onSwitch={() => setMode('register')} />
             : <RegisterForm onSwitch={() => setMode('login')} />
           }
         </div>
-        <p className="text-xs text-slate-400 mt-5 mb-8 text-center">
+        <p className="text-xs text-slate-500 mt-3 mb-4 text-center">
           Los Líderes Encomiendas · v{version} (build {build})
         </p>
       </div>

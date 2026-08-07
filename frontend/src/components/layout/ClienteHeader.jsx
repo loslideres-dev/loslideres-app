@@ -59,7 +59,7 @@ export default function ClienteHeader({ titulo, subtitulo, acciones, children })
               : iniciales}
           </button>
           <button onClick={salir} aria-label="Cerrar sesión"
-            className="text-slate-400 hover:text-white transition p-1 active:scale-95">
+            className="text-slate-300 hover:text-white transition p-1 active:scale-95">
             <LogOut size={18} />
           </button>
         </div>

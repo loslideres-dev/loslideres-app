@@ -84,7 +84,7 @@ export default function Casillero() {
             style={{ fontSize: 38, letterSpacing: 6 }}>
             {codigo}
           </p>
-          <p className="text-slate-400 text-xs">Este código identifica tus paquetes</p>
+          <p className="text-slate-300 text-xs">Este código identifica tus paquetes</p>
         </div>
       </ClienteHeader>
 
@@ -154,7 +154,7 @@ export default function Casillero() {
                 )}
               </button>
 
-              <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">
+              <p className="text-xs font-semibold text-slate-500 tracking-wider mb-3">
                 DIRECCIÓN DE ENVÍO
               </p>
             <div className="space-y-1">
@@ -217,7 +217,7 @@ export default function Casillero() {
               flex items-center justify-between gap-3 active:scale-95 transition">
             <div className="min-w-0 text-left">
               <p className="text-sm font-semibold text-slate-800">Ver mis paquetes</p>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-sm text-slate-600 mt-0.5">
                 {activos > 0
                   ? `${activos} ${activos === 1 ? 'activo' : 'activos'} · toca para seguirlos`
                   : 'Estado y seguimiento'}

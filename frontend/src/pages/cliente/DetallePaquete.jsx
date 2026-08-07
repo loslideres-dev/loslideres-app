@@ -34,7 +34,7 @@ function InfoRow({ icon: Icon, label, value }) {
         <Icon size={15} style={{ color: '#1565C0' }} />
       </div>
       <div>
-        <p className="text-xs text-slate-400 mb-0.5">{label}</p>
+        <p className="text-xs text-slate-500 mb-0.5">{label}</p>
         <p className="text-sm font-medium text-slate-800">{value}</p>
       </div>
     </div>
@@ -116,7 +116,7 @@ export default function DetallePaquete() {
                 <img src={paquete.foto_url} alt="paquete"
                   className="w-full h-full object-cover opacity-80" />
                 {/* Hint sutil */}
-                <span className="absolute bottom-20 right-4 text-white text-[10px]
+                <span className="absolute bottom-20 right-4 text-white text-[11px]
                   font-semibold px-2 py-0.5 rounded-full"
                   style={{ background: 'rgba(0,0,0,0.45)' }}>
                   Toca para ampliar
@@ -138,12 +138,12 @@ export default function DetallePaquete() {
               <p className="text-sky-300 text-sm font-mono font-semibold">
                 {paquete.tracking_externo}
               </p>
-              <p className="text-slate-400 text-[10px] font-mono">
+              <p className="text-slate-200 text-[11px] font-mono">
                 Interno: {paquete.codigo}
               </p>
             </div>
           ) : (
-            <p className="text-slate-400 text-xs font-mono mb-1">{paquete.codigo}</p>
+            <p className="text-slate-200 text-xs font-mono mb-1">{paquete.codigo}</p>
           )}
           <div className="flex items-center justify-between">
             <h1 className="text-white text-lg font-bold">
@@ -181,7 +181,7 @@ export default function DetallePaquete() {
 
       {/* ── Timeline ── */}
       <div className="mx-5 mb-4 bg-white rounded-2xl shadow-sm p-5">
-        <p className="text-xs font-semibold text-slate-400 tracking-wider mb-4">
+        <p className="text-xs font-semibold text-slate-500 tracking-wider mb-4">
           SEGUIMIENTO
         </p>
         <div className="space-y-0">
@@ -212,7 +212,7 @@ export default function DetallePaquete() {
                       ? 'text-blue-700'
                       : done
                         ? 'text-slate-700'
-                        : 'text-slate-300'}`}>
+                        : 'text-slate-500'}`}>
                     {label}
                   </p>
                   {current && (
@@ -252,7 +252,7 @@ export default function DetallePaquete() {
 
       {/* ── Detalles ── */}
       <div className="mx-5 mb-4 bg-white rounded-2xl shadow-sm p-5">
-        <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
+        <p className="text-xs font-semibold text-slate-500 tracking-wider mb-2">
           DETALLES
         </p>
         <InfoRow
@@ -291,7 +291,7 @@ export default function DetallePaquete() {
       {/* ── Entrega ── */}
       {paquete.estado === 'ENTREGADO' && (
         <div className="mx-5 mb-4 bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">
+          <p className="text-xs font-semibold text-slate-500 tracking-wider mb-2">
             ENTREGA
           </p>
           <InfoRow
@@ -320,14 +320,14 @@ export default function DetallePaquete() {
           {/* Comprobante de entrega */}
           {paquete.foto_entrega_url && (
             <div className="pt-3">
-              <p className="text-xs text-slate-400 mb-2">Comprobante de entrega</p>
+              <p className="text-xs text-slate-500 mb-2">Comprobante de entrega</p>
               <button
                 onClick={() => setVisorSrc(paquete.foto_entrega_url)}
                 className="w-full relative active:opacity-90 transition"
               >
                 <img src={paquete.foto_entrega_url} alt="Comprobante"
                   className="w-full h-44 object-cover rounded-xl" />
-                <span className="absolute bottom-2 right-2 text-white text-[10px]
+                <span className="absolute bottom-2 right-2 text-white text-[11px]
                   font-semibold px-2 py-0.5 rounded-full"
                   style={{ background: 'rgba(0,0,0,0.45)' }}>
                   Toca para ampliar

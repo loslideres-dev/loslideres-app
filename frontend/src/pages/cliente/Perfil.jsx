@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useMiPerfil, useActualizarPerfil } from '../../hooks/usePerfiles'
 import ClienteLayout from '../../components/layout/ClienteLayout'
 import ClienteHeader from '../../components/layout/ClienteHeader'
+import TelefonoInput from '../../components/ui/TelefonoInput'
 import Toast from '../../components/ui/Toast'
 
 export default function Perfil() {
@@ -62,7 +63,7 @@ export default function Perfil() {
           </div>
           <div className="min-w-0">
             <p className="text-sky-300 text-sm font-mono font-bold">{codigo}</p>
-            <p className="text-slate-400 text-xs truncate">{user?.email}</p>
+            <p className="text-slate-300 text-xs truncate">{user?.email}</p>
           </div>
         </div>
       </ClienteHeader>
@@ -75,23 +76,21 @@ export default function Perfil() {
             </div>
           : <>
               <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
-                <p className="text-xs font-semibold text-slate-400 tracking-wider">MIS DATOS</p>
+                <p className="text-xs font-semibold text-slate-500 tracking-wider">MIS DATOS</p>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Nombre</label>
                   <input type="text" value={form.nombre}
                     onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 text-base
                       outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Teléfono</label>
-                  <input type="tel" value={form.telefono} placeholder="+58..."
-                    onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
-                      outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" />
-                </div>
+                <TelefonoInput
+                  label="Teléfono / WhatsApp"
+                  value={form.telefono}
+                  onChange={tel => setForm(f => ({ ...f, telefono: tel }))}
+                />
 
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">
@@ -100,7 +99,7 @@ export default function Perfil() {
                   <textarea value={form.direccion_entrega} rows={3}
                     placeholder="Calle, urbanización, referencia..."
                     onChange={e => setForm(f => ({ ...f, direccion_entrega: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 text-base
                       outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 resize-none" />
                 </div>
 
@@ -115,7 +114,7 @@ export default function Perfil() {
 
               {/* Info cuenta */}
               <div className="bg-white rounded-2xl shadow-sm p-5">
-                <p className="text-xs font-semibold text-slate-400 tracking-wider mb-3">MI CUENTA</p>
+                <p className="text-xs font-semibold text-slate-500 tracking-wider mb-3">MI CUENTA</p>
                 <div className="flex items-center justify-between py-2 border-b border-slate-50">
                   <p className="text-sm text-slate-600">Correo</p>
                   <p className="text-sm font-medium text-slate-800">{user?.email}</p>
