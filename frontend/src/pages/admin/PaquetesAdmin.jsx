@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Package, Loader2, MessageCircle, Phone, MapPin, User, Navigation, Search, X,
-  Receipt, FileText,
+  Receipt, FileText, PackagePlus, ChevronDown, Calendar, ChevronRight,
 } from 'lucide-react'
 import { usePaquetesAdmin, useTarifar, useMarcarEntregado } from '../../hooks/usePaquetes'
 import { useConductores } from '../../hooks/usePerfiles'
@@ -14,14 +14,29 @@ import EstadoBadge from '../../components/ui/EstadoBadge'
 import Modal from '../../components/ui/Modal'
 import Toast from '../../components/ui/Toast'
 import ImageViewer from '../../components/ui/ImageViewer'
+import { usePrealertasGerencia } from '../../hooks/usePrealertas'
+import { fechaCorta, tiempoRelativoCorto } from '../../lib/fechas'
+
+// 'AVISADOS' no es un estado de paquete: es una vista distinta. Se maneja
+// como filtro para que el admin no tenga que aprender otra pantalla.
+const TAB_AVISADOS = 'AVISADOS'
+
+const POR_TANDA = 15
 
 const FILTROS = [
   { label: 'Todos',      value: null           },
+  { label: 'Avisados',   value: TAB_AVISADOS   },
   { label: 'Pendientes', value: 'RECIBIDO'    },
   { label: 'Tarifados',  value: 'TARIFADO'    },
   { label: 'Tránsito',   value: 'EN_TRANSITO' },
   { label: 'Reparto',    value: 'EN_REPARTO'  },
 ]
+
+// El cliente pega las guías como le llegan: por coma, espacio o salto de línea.
+function separarGuias(tracking) {
+  if (!tracking) return []
+  return tracking.split(/[\s,;]+/).map(g => g.trim()).filter(Boolean)
+}
 
 function whatsappUrl(telefono, mensaje) {
   const num = (telefono ?? '').replace(/\D/g, '')
@@ -68,8 +83,35 @@ export default function PaquetesAdmin() {
   const [toast,    setToast]    = useState({ show: false, msg: '', type: 'success' })
   const [visorSrc, setVisorSrc] = useState(null)  // ← visor imagen
   const modalAbiertoAuto = useRef(false)          // ← evita reapertura del modal
+  const [visiblesAviso, setVisiblesAviso] = useState(POR_TANDA)
+  const [avisoDetalle,  setAvisoDetalle]  = useState(null)
 
-  const { data: paquetes = [], isLoading } = usePaquetesAdmin(filtro)
+  const enAvisados = filtro === TAB_AVISADOS
+
+  // Solo se consulta cuando el tab está activo: el admin entra a esta pantalla
+  // sobre todo a tarifar, y no tiene por qué pagar la consulta cada vez.
+  const { data: dataAvisos, isLoading: cargandoAvisos } = usePrealertasGerencia()
+
+  const avisosPendientes = useMemo(() => {
+    const filas = (dataAvisos?.filas ?? []).filter(a => a.estado === 'PENDIENTE')
+    const q = busqueda.trim().toLowerCase()
+    if (!q) return filas
+    return filas.filter(a =>
+      a.cliente_nombre?.toLowerCase().includes(q) ||
+      a.cliente_codigo?.toLowerCase().includes(q) ||
+      a.tienda?.toLowerCase().includes(q) ||
+      a.descripcion?.toLowerCase().includes(q) ||
+      a.tracking?.toLowerCase().includes(q))
+  }, [dataAvisos, busqueda])
+
+  const avisosMostrados = avisosPendientes.slice(0, visiblesAviso)
+  const avisosRestantes = avisosPendientes.length - avisosMostrados.length
+
+  // AVISADOS no es un estado de la tabla `paquetes`: pasarlo al hook dispararía
+  // un .eq('estado','AVISADOS') que siempre vuelve vacío. Se manda null y la
+  // lista de paquetes simplemente no se pinta mientras el tab esté activo.
+  const { data: paquetes = [], isLoading } =
+    usePaquetesAdmin(filtro === TAB_AVISADOS ? null : filtro)
 
   const q = busqueda.trim().toLowerCase()
   const paquetesFiltrados = q
@@ -219,7 +261,8 @@ export default function PaquetesAdmin() {
       <div className="px-5 pt-2 pb-2 overflow-x-auto">
         <div className="flex gap-2 w-max">
           {FILTROS.map(({ label, value }) => (
-            <button key={label} onClick={() => setFiltro(value)}
+            <button key={label}
+              onClick={() => { setFiltro(value); setVisiblesAviso(POR_TANDA) }}
               className={`px-4 py-2 rounded-full text-xs font-semibold border
                 transition whitespace-nowrap
                 ${filtro === value
@@ -232,7 +275,104 @@ export default function PaquetesAdmin() {
         </div>
       </div>
 
-      {/* ── Lista ── */}
+      {/* ── Lista de avisados ── */}
+      {enAvisados && (
+        <div className="px-5 py-3 space-y-3">
+          {cargandoAvisos && (
+            <div className="flex justify-center py-10">
+              <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent
+                rounded-full animate-spin" />
+            </div>
+          )}
+
+          {!cargandoAvisos && avisosPendientes.length === 0 && (
+            <div className="text-center py-14">
+              <PackagePlus size={44} className="text-slate-200 mx-auto mb-3" />
+              <p className="text-slate-500 text-sm font-medium">
+                Ningún cliente tiene paquetes avisados
+              </p>
+              <p className="text-slate-400 text-xs mt-1 px-8 leading-relaxed">
+                Aquí aparece lo que los clientes dicen que viene en camino,
+                antes de que llegue a la bodega.
+              </p>
+            </div>
+          )}
+
+          {/* Resumen en una línea. El detalle va al modal: con ocho guías,
+              la tarjeta ocupaba media pantalla y volvía imposible escanear
+              la lista, que es justo para lo que sirve. */}
+          {avisosMostrados.map(a => {
+            const guias = separarGuias(a.tracking)
+            return (
+              <button key={a.id} onClick={() => setAvisoDetalle(a)}
+                className="w-full bg-white rounded-2xl shadow-sm px-4 py-3
+                  flex items-center gap-3 active:scale-95 transition text-left">
+
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center
+                  flex-shrink-0"
+                  style={{ background: a.atrasada ? '#FEE2E2' : '#FEF3C7' }}>
+                  <PackagePlus size={17}
+                    style={{ color: a.atrasada ? '#991B1B' : '#B45309' }} />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-800 truncate">
+                      {a.cliente_nombre}
+                    </p>
+                    <span className="text-[10px] font-mono text-slate-400 flex-shrink-0">
+                      {a.cliente_codigo}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 truncate">
+                    {a.tienda} · {a.descripcion}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={a.atrasada
+                        ? { background: '#FEE2E2', color: '#991B1B' }
+                        : { background: '#FEF3C7', color: '#B45309' }}>
+                      Pendiente por llegar a bodega
+                    </span>
+                    {guias.length > 0 && (
+                      <span className="text-[10px] text-slate-400">
+                        {guias.length === 1 ? '1 guía' : `${guias.length} guías`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-right flex-shrink-0">
+                  <p className="text-[11px] font-medium"
+                    style={{ color: a.atrasada ? '#991B1B' : '#94A3B8' }}>
+                    hace {tiempoRelativoCorto(a.created_at)}
+                  </p>
+                  <ChevronRight size={16} className="text-slate-300 ml-auto mt-0.5" />
+                </div>
+              </button>
+            )
+          })}
+
+          {avisosRestantes > 0 && (
+            <button onClick={() => setVisiblesAviso(v => v + POR_TANDA)}
+              className="w-full py-3.5 rounded-2xl bg-white shadow-sm text-sm
+                font-semibold flex items-center justify-center gap-2
+                active:scale-95 transition"
+              style={{ color: '#1565C0' }}>
+              <ChevronDown size={16} /> Ver más ({avisosRestantes})
+            </button>
+          )}
+
+          {avisosPendientes.length > POR_TANDA && (
+            <p className="text-center text-xs text-slate-400 pt-1">
+              Mostrando {avisosMostrados.length} de {avisosPendientes.length}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Lista de paquetes ── */}
+      {!enAvisados && (
       <div className="px-5 py-3 space-y-3">
         {isLoading && (
           <div className="flex justify-center py-10">
@@ -284,6 +424,116 @@ export default function PaquetesAdmin() {
           </button>
         ))}
       </div>
+      )}
+
+      {/* ── Modal de aviso ── */}
+      {avisoDetalle && (
+        <Modal open={!!avisoDetalle} onClose={() => setAvisoDetalle(null)}
+          title={avisoDetalle.cliente_nombre}>
+          <div className="space-y-4">
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                style={avisoDetalle.atrasada
+                  ? { background: '#FEE2E2', color: '#991B1B' }
+                  : { background: '#FEF3C7', color: '#B45309' }}>
+                Pendiente por llegar a bodega
+              </span>
+              {avisoDetalle.atrasada && (
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                  style={{ background: '#FEE2E2', color: '#991B1B' }}>
+                  {avisoDetalle.dias} días sin llegar
+                </span>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl px-4 py-3">
+              <p className="text-xs text-slate-400">Casillero</p>
+              <p className="text-sm font-mono font-semibold text-slate-800">
+                {avisoDetalle.cliente_codigo}
+              </p>
+              {avisoDetalle.cliente_telefono && (
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {avisoDetalle.cliente_telefono}
+                </p>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl px-4 py-3">
+              <p className="text-xs text-slate-400 mb-1">Qué compró</p>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full
+                inline-block mb-1.5"
+                style={{ background: '#EEF2F8', color: '#1565C0' }}>
+                {avisoDetalle.tienda}
+              </span>
+              <p className="text-sm text-slate-700 leading-relaxed break-words">
+                {avisoDetalle.descripcion}
+              </p>
+            </div>
+
+            {/* Una guía por línea, numeradas: se cotejan de a una contra
+                las cajas cuando llegan. */}
+            {(() => {
+              const guias = separarGuias(avisoDetalle.tracking)
+              if (guias.length === 0) {
+                return (
+                  <div className="bg-white rounded-xl px-4 py-3">
+                    <p className="text-xs text-slate-400">Guías</p>
+                    <p className="text-sm text-slate-400 mt-0.5">
+                      El cliente no dejó número de guía
+                    </p>
+                  </div>
+                )
+              }
+              return (
+                <div className="bg-white rounded-xl px-4 py-3">
+                  <p className="text-xs text-slate-400 mb-2">
+                    {guias.length === 1 ? 'Guía' : `${guias.length} guías`}
+                  </p>
+                  <div className="space-y-1.5">
+                    {guias.map((g, i) => (
+                      <div key={i} className="rounded-lg px-3 py-2 flex items-center gap-2.5"
+                        style={{ background: '#F1F5F9' }}>
+                        <span className="text-[10px] text-slate-400 w-3 flex-shrink-0
+                          font-mono">{i + 1}</span>
+                        <span className="text-sm font-mono font-bold break-all"
+                          style={{ color: '#0D2B5E', letterSpacing: 0.5 }}>
+                          {g}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
+            <div className="bg-white rounded-xl px-4 py-3 flex items-center gap-2.5">
+              <Calendar size={15} className="text-slate-300 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-slate-400">Avisado</p>
+                <p className="text-sm font-medium text-slate-700">
+                  {fechaCorta(avisoDetalle.created_at)}
+                  <span className="text-slate-400 font-normal">
+                    {' · hace '}{tiempoRelativoCorto(avisoDetalle.created_at)}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {avisoDetalle.cliente_telefono && (
+              <a href={whatsappUrl(avisoDetalle.cliente_telefono,
+                    `Hola ${avisoDetalle.cliente_nombre}, te escribimos de Los Líderes `
+                    + `Encomiendas sobre el envío de ${avisoDetalle.tienda} que nos avisaste.`)}
+                target="_blank" rel="noreferrer"
+                className="w-full py-3.5 rounded-xl text-white font-semibold text-sm
+                  flex items-center justify-center gap-2 active:scale-95 transition"
+                style={{ background: '#25D366' }}>
+                <MessageCircle size={17} /> Escribirle al cliente
+              </a>
+            )}
+          </div>
+        </Modal>
+      )}
 
       {/* ── Modal ── */}
       {modal && (
