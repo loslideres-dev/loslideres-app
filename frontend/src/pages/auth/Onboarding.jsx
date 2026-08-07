@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/authStore'
 import { Loader2, Package, MapPin, Phone, User, ArrowRight, Check } from 'lucide-react'
+import TelefonoInput from '../../components/ui/TelefonoInput'
 
 const schema = z.object({
   nombre:    z.string().min(2, 'Ingresa tu nombre completo'),
@@ -88,7 +89,8 @@ function StepPerfil({ tieneNombre, onDone }) {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, control,
+          formState: { errors } } = useForm({
     resolver: zodResolver(
       tieneNombre
         ? schema.omit({ nombre: true })
@@ -122,7 +124,7 @@ function StepPerfil({ tieneNombre, onDone }) {
       if (errPerfil) throw errPerfil
 
       // 2. Actualizar metadata del usuario
-      const { data, error: errMeta } = await supabase.auth.updateUser({
+      const { error: errMeta } = await supabase.auth.updateUser({
         data: {
           nombre,
           telefono:        values.telefono,
@@ -203,19 +205,23 @@ function StepPerfil({ tieneNombre, onDone }) {
 
         {/* Teléfono */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Teléfono WhatsApp
-          </label>
-          <input type="tel" autoComplete="tel"
-            placeholder="+58 412 000 0000"
-            {...register('telefono')}
-            className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition
-              focus:ring-2 focus:ring-blue-500
-              ${errors.telefono ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50'}`} />
-          {errors.telefono && (
-            <p className="mt-1 text-xs text-red-600">{errors.telefono.message}</p>
-          )}
-          <p className="mt-1 text-xs text-slate-400">
+          {/* Controller y no register(): el componente maneja código de país y
+              número por separado y emite un único valor E.164. Es la forma que
+              react-hook-form provee para componentes propios; watch() aquí
+              rompe la memoización y el linter lo marca. */}
+          <Controller
+            name="telefono"
+            control={control}
+            render={({ field }) => (
+              <TelefonoInput
+                label="Teléfono WhatsApp"
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                error={errors.telefono?.message}
+              />
+            )}
+          />
+          <p className="mt-1 text-xs text-slate-500">
             Por aquí te avisamos cuando llegue tu paquete
           </p>
         </div>
